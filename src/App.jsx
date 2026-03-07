@@ -222,95 +222,13 @@ export default function App() {
       <div className="relative max-w-2xl mx-auto px-4 py-8">
         <header className="flex items-center justify-between mb-6">
           <div>
-            <div className="relative inline-block" style={{paddingTop:"26px"}}>
-              <h1 className="font-black italic tracking-tighter uppercase inline-flex items-end" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400" style={{position:"relative"}}>I</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
+            <div style={{display:"inline-flex", flexDirection:"column", alignItems:"flex-start"}}>
+              <div style={{paddingLeft:"70%", marginBottom:"-2px", lineHeight:1}}>
+                <svg width="40" height="22" viewBox="0 0 40 22" fill="none"><rect x="0" y="18" width="10" height="1" rx="1" fill="#22d3ee"/><rect x="1" y="20" width="7" height="1" rx="1" fill="#a5f3fc"/><rect x="4" y="22" width="4" height="1" rx="1" fill="#67e8f9"/><rect x="11" y="16" width="2" height="2" fill="#ffffff"/><rect x="13" y="16" width="2" height="2" fill="#ffffff"/><rect x="15" y="16" width="2" height="2" fill="#ffffff"/><rect x="17" y="16" width="2" height="2" fill="#ffffff"/><rect x="19" y="16" width="2" height="2" fill="#ffffff"/><rect x="21" y="16" width="2" height="2" fill="#ffffff"/><rect x="23" y="16" width="2" height="2" fill="#ffffff"/><rect x="25" y="16" width="2" height="2" fill="#ffffff"/><rect x="27" y="16" width="2" height="2" fill="#ffffff"/><rect x="29" y="16" width="2" height="2" fill="#ffffff"/><rect x="31" y="16" width="2" height="2" fill="#ffffff"/><rect x="11" y="18" width="2" height="2" fill="#ffffff"/><rect x="13" y="18" width="2" height="2" fill="#ffffff"/><rect x="15" y="18" width="2" height="2" fill="#ffffff"/><rect x="17" y="18" width="2" height="2" fill="#ffffff"/><rect x="19" y="18" width="2" height="2" fill="#ffffff"/><rect x="21" y="18" width="2" height="2" fill="#ffffff"/><rect x="23" y="18" width="2" height="2" fill="#ffffff"/><rect x="25" y="18" width="2" height="2" fill="#ffffff"/><rect x="27" y="18" width="2" height="2" fill="#ffffff"/><rect x="29" y="18" width="2" height="2" fill="#ffffff"/><rect x="31" y="18" width="2" height="2" fill="#ffffff"/><rect x="11" y="20" width="2" height="2" fill="#94a3b8"/><rect x="13" y="20" width="2" height="2" fill="#94a3b8"/><rect x="15" y="20" width="2" height="2" fill="#94a3b8"/><rect x="17" y="20" width="2" height="2" fill="#94a3b8"/><rect x="19" y="20" width="2" height="2" fill="#94a3b8"/><rect x="21" y="20" width="2" height="2" fill="#94a3b8"/><rect x="23" y="20" width="2" height="2" fill="#94a3b8"/><rect x="25" y="20" width="2" height="2" fill="#94a3b8"/><rect x="27" y="20" width="2" height="2" fill="#94a3b8"/><rect x="29" y="20" width="2" height="2" fill="#94a3b8"/><rect x="31" y="20" width="2" height="2" fill="#94a3b8"/><rect x="18" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="20" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="22" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="18" y="2" width="2" height="2" fill="#22d3ee"/><rect x="20" y="2" width="2" height="2" fill="#22d3ee"/><rect x="22" y="2" width="2" height="2" fill="#22d3ee"/><rect x="24" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="4" width="2" height="2" fill="#22d3ee"/><rect x="18" y="4" width="2" height="2" fill="#22d3ee"/><rect x="20" y="4" width="2" height="2" fill="#22d3ee"/><rect x="22" y="4" width="2" height="2" fill="#22d3ee"/><rect x="24" y="4" width="2" height="2" fill="#22d3ee"/><rect x="26" y="4" width="2" height="2" fill="#0a0a1a"/><rect x="14" y="6" width="2" height="2" fill="#0e7490"/><rect x="16" y="6" width="2" height="2" fill="#22d3ee"/><rect x="18" y="6" width="2" height="2" fill="#22d3ee"/><rect x="20" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="6" width="2" height="2" fill="#22d3ee"/><rect x="26" y="6" width="2" height="2" fill="#fbbf24"/><rect x="28" y="6" width="2" height="2" fill="#fbbf24"/><rect x="12" y="8" width="2" height="2" fill="#0e7490"/><rect x="14" y="8" width="2" height="2" fill="#0e7490"/><rect x="16" y="8" width="2" height="2" fill="#22d3ee"/><rect x="18" y="8" width="2" height="2" fill="#22d3ee"/><rect x="20" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="8" width="2" height="2" fill="#22d3ee"/><rect x="26" y="8" width="2" height="2" fill="#22d3ee"/><rect x="14" y="10" width="2" height="2" fill="#0e7490"/><rect x="16" y="10" width="2" height="2" fill="#0e7490"/><rect x="18" y="10" width="2" height="2" fill="#22d3ee"/><rect x="20" y="10" width="2" height="2" fill="#22d3ee"/><rect x="22" y="10" width="2" height="2" fill="#22d3ee"/><rect x="24" y="10" width="2" height="2" fill="#22d3ee"/><rect x="16" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="12" width="2" height="2" fill="#22d3ee"/><rect x="20" y="12" width="2" height="2" fill="#22d3ee"/><rect x="22" y="12" width="2" height="2" fill="#22d3ee"/><rect x="24" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="14" width="2" height="2" fill="#0e7490"/><rect x="20" y="14" width="2" height="2" fill="#22d3ee"/><rect x="22" y="14" width="2" height="2" fill="#0e7490"/></svg>
+              </div>
+              <h1 className="font-black italic tracking-tighter uppercase" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">I</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
               </h1>
-              <span style={{position:"absolute", bottom:"100%", left:"70%", transform:"translateX(-50%)", marginBottom:"-2px"}}>  <svg width="46" height="22" viewBox="0 0 46 22" fill="none" >
-  <rect x="0" y="18" width="14" height="1.5" rx="1" fill="#22d3ee"/>
-  <rect x="4" y="20" width="10" height="1" rx="1" fill="#a5f3fc"/>
-  <rect x="8" y="22" width="6" height="1" rx="1" fill="#67e8f9"/>
-  <rect x="17" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="19" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="21" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="23" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="25" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="27" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="29" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="31" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="33" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="35" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="37" y="16" width="2" height="2" fill="#ffffff"/>
-  <rect x="17" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="19" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="21" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="23" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="25" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="27" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="29" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="31" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="33" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="35" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="37" y="18" width="2" height="2" fill="#ffffff"/>
-  <rect x="17" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="19" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="21" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="23" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="25" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="27" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="29" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="31" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="33" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="35" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="37" y="20" width="2" height="2" fill="#94a3b8"/>
-  <rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="26" y="0" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="28" y="0" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="30" y="0" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="22" y="2" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="24" y="2" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="2" width="2" height="2" fill="#22d3ee"/>
-  <rect x="28" y="2" width="2" height="2" fill="#22d3ee"/>
-  <rect x="30" y="2" width="2" height="2" fill="#a5f3fc"/>
-  <rect x="22" y="4" width="2" height="2" fill="#22d3ee"/>
-  <rect x="24" y="4" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="4" width="2" height="2" fill="#22d3ee"/>
-  <rect x="28" y="4" width="2" height="2" fill="#22d3ee"/>
-  <rect x="30" y="4" width="2" height="2" fill="#22d3ee"/>
-  <rect x="32" y="4" width="2" height="2" fill="#0a0a1a"/>
-  <rect x="20" y="6" width="2" height="2" fill="#0e7490"/>
-  <rect x="22" y="6" width="2" height="2" fill="#22d3ee"/>
-  <rect x="24" y="6" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="6" width="2" height="2" fill="#e0f9ff"/>
-  <rect x="28" y="6" width="2" height="2" fill="#e0f9ff"/>
-  <rect x="30" y="6" width="2" height="2" fill="#22d3ee"/>
-  <rect x="32" y="6" width="2" height="2" fill="#fbbf24"/>
-  <rect x="34" y="6" width="2" height="2" fill="#fbbf24"/>
-  <rect x="18" y="8" width="2" height="2" fill="#0e7490"/>
-  <rect x="20" y="8" width="2" height="2" fill="#0e7490"/>
-  <rect x="22" y="8" width="2" height="2" fill="#22d3ee"/>
-  <rect x="24" y="8" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="8" width="2" height="2" fill="#e0f9ff"/>
-  <rect x="28" y="8" width="2" height="2" fill="#e0f9ff"/>
-  <rect x="30" y="8" width="2" height="2" fill="#22d3ee"/>
-  <rect x="32" y="8" width="2" height="2" fill="#22d3ee"/>
-  <rect x="20" y="10" width="2" height="2" fill="#0e7490"/>
-  <rect x="22" y="10" width="2" height="2" fill="#0e7490"/>
-  <rect x="24" y="10" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="10" width="2" height="2" fill="#22d3ee"/>
-  <rect x="28" y="10" width="2" height="2" fill="#22d3ee"/>
-  <rect x="30" y="10" width="2" height="2" fill="#22d3ee"/>
-  <rect x="22" y="12" width="2" height="2" fill="#0e7490"/>
-  <rect x="24" y="12" width="2" height="2" fill="#22d3ee"/>
-  <rect x="26" y="12" width="2" height="2" fill="#22d3ee"/>
-  <rect x="28" y="12" width="2" height="2" fill="#22d3ee"/>
-  <rect x="30" y="12" width="2" height="2" fill="#0e7490"/>
-  <rect x="24" y="14" width="2" height="2" fill="#0e7490"/>
-  <rect x="26" y="14" width="2" height="2" fill="#22d3ee"/>
-  <rect x="28" y="14" width="2" height="2" fill="#0e7490"/>
-</svg></span>
             </div>
             <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
           </div>
