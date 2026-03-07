@@ -216,8 +216,31 @@ export default function App() {
       <div className="relative max-w-2xl mx-auto px-4 py-8">
         <header className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-5xl sm:text-6xl font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-400 to-pink-500">
-              Bluebird
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tighter uppercase relative inline-flex items-end">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span>
+              <span className="relative inline-block">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">I</span>
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-0.5 pointer-events-none">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="25" width="28" height="3.5" rx="1.75" fill="white"/>
+                    <rect x="2" y="28.5" width="28" height="1.5" rx="0.75" fill="#94a3b8"/>
+                    <rect x="12" y="21" width="2.5" height="5" rx="0.75" fill="white"/>
+                    <rect x="17.5" y="21" width="2.5" height="5" rx="0.75" fill="white"/>
+                    <ellipse cx="16" cy="16" rx="6.5" ry="5.5" fill="#22d3ee"/>
+                    <ellipse cx="16" cy="17" rx="3.5" ry="3" fill="#e0f9ff"/>
+                    <ellipse cx="10.5" cy="16" rx="3.5" ry="2.5" fill="#0e7490" transform="rotate(-15 10.5 16)"/>
+                    <ellipse cx="21.5" cy="16" rx="3.5" ry="2.5" fill="#0e7490" transform="rotate(15 21.5 16)"/>
+                    <ellipse cx="16" cy="9.5" rx="4.5" ry="4.5" fill="#22d3ee"/>
+                    <ellipse cx="14" cy="5.5" rx="1.5" ry="2.5" fill="#a5f3fc" transform="rotate(-15 14 5.5)"/>
+                    <ellipse cx="16" cy="4.5" rx="1.5" ry="2.5" fill="#a5f3fc"/>
+                    <ellipse cx="18" cy="5.5" rx="1.5" ry="2.5" fill="#a5f3fc" transform="rotate(15 18 5.5)"/>
+                    <circle cx="18" cy="8.5" r="1.5" fill="#0a0a1a"/>
+                    <circle cx="18.5" cy="8" r="0.5" fill="white"/>
+                    <polygon points="19.5,10 24,11.5 19.5,13" fill="#fbbf24"/>
+                  </svg>
+                </span>
+              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
             </h1>
             <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
           </div>
