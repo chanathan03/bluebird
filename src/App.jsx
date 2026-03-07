@@ -222,13 +222,13 @@ export default function App() {
       <div className="relative max-w-2xl mx-auto px-4 py-8">
         <header className="flex items-center justify-between mb-6">
           <div>
-            <div className="relative inline-block" style={{paddingTop:"18px"}}>
+            <div className="relative inline-block" style={{paddingTop:"26px"}}>
               <h1 className="font-black italic tracking-tighter uppercase inline-flex items-end" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400" style={{position:"relative"}}>I</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
               </h1>
-              <span style={{position:"absolute", top:0, left:"70%", transform:"translateX(-50%)"}}>  <svg width="46" height="22" viewBox="0 0 46 22" fill="none" >
+              <span style={{position:"absolute", bottom:"100%", left:"70%", transform:"translateX(-50%)", marginBottom:"-2px"}}>  <svg width="46" height="22" viewBox="0 0 46 22" fill="none" >
   <rect x="0" y="18" width="14" height="1.5" rx="1" fill="#22d3ee"/>
   <rect x="4" y="20" width="10" height="1" rx="1" fill="#a5f3fc"/>
   <rect x="8" y="22" width="6" height="1" rx="1" fill="#67e8f9"/>
