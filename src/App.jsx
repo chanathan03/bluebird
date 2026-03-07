@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Mountain, Search, ChevronRight, Sparkles, Loader2,
-  Send, Radio, Gamepad2, RefreshCcw, Globe, AlertTriangle,
-  Command, Activity
-} from "lucide-react";
+  Gamepad2, RefreshCcw, Globe, AlertTriangle, Command,
+  Activity, UtensilsCrossed, Coffee
+} from 'lucide-react';
 
 const INITIAL_RESORT_DATA = {
-  Alpental: {
+  "Alpental": {
     region: "Washington, USA",
     current: { tempF: 28, wind: "10 mph W", newSnowIn: 14, baseIn: 120, condition: "Deep Powder", lifts: "4/4", trails: "24/24" },
     forecast: [
@@ -23,7 +23,7 @@ const INITIAL_RESORT_DATA = {
     forecast: [
       { day: "Friday", high: 27, low: 17, snow: '5"' },
       { day: "Saturday", high: 22, low: 10, snow: '2"' },
-      { day: "Sunday", high: 43, low: 17, snow: '0"' },
+      { day: "Sunday", high: 43, low: 17, snow: '1"' },
       { day: "Monday", high: 47, low: 24, snow: '0"' },
       { day: "Tuesday", high: 44, low: 29, snow: '1"' },
     ],
@@ -41,7 +41,6 @@ const INITIAL_RESORT_DATA = {
   },
 };
 
-// Calls your Vercel serverless proxy instead of Anthropic directly
 const callClaude = async (userPrompt, systemPrompt) => {
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -53,7 +52,6 @@ const callClaude = async (userPrompt, systemPrompt) => {
       messages: [{ role: "user", content: userPrompt }],
     }),
   });
-
   if (!response.ok) throw new Error(`Status ${response.status}`);
   const data = await response.json();
   return data.content?.map((b) => b.text || "").join("") || "";
@@ -74,12 +72,12 @@ export default function App() {
   const [isGeneratingHype, setIsGeneratingHype] = useState(false);
   const [gearAdvice, setGearAdvice] = useState("");
   const [isGeneratingGear, setIsGeneratingGear] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
-  const [isChatting, setIsChatting] = useState(false);
+  const [localSpots, setLocalSpots] = useState(null);
+  const [isLoadingSpots, setIsLoadingSpots] = useState(false);
 
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
+  const shadow = (color) => ({ boxShadow: `6px 6px 0px ${color}` });
 
   const fetchGlobalResort = async (resortName) => {
     if (!resortName || resortName.length < 3) return;
@@ -88,7 +86,7 @@ export default function App() {
     setIsSearching(false);
     setError("");
     try {
-      const sys = `You are a ski resort data expert. Generate realistic snow condition data for the resort. Return ONLY valid JSON, no markdown, no backticks:
+      const sys = `You are a ski resort data expert. Generate realistic snow condition data. Return ONLY valid JSON, no markdown, no backticks:
 {
   "region": "State/Country",
   "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" },
@@ -106,7 +104,7 @@ export default function App() {
       setSelectedResort(resortName);
       setSearch("");
       addLog(`TRANSMISSION COMPLETE: ${resortName.toUpperCase()} IS LIVE.`);
-    } catch (err) {
+    } catch {
       setError("SIGNAL LOST: UNABLE TO DECODE MOUNTAIN DATA.");
       addLog("FETCH ERROR: CONNECTION FAILURE.");
     } finally {
@@ -146,23 +144,37 @@ export default function App() {
     }
   };
 
-  const handleChat = async (e) => {
-    e?.preventDefault();
-    if (!chatInput.trim() || isChatting) return;
-    const msg = chatInput;
-    setChatInput("");
-    setChatHistory((prev) => [...prev, { role: "user", text: msg }]);
-    setIsChatting(true);
+  const fetchLocalSpots = async () => {
+    if (isLoadingSpots) return;
+    setIsLoadingSpots(true);
+    setLocalSpots(null);
     try {
-      const result = await callClaude(
-        `User: "${msg}". Resort: ${selectedResort}, ${resort?.current?.tempF}F, ${resort?.current?.condition}.`,
-        "You are Blue Bird Bro, a radical 80s ski bum DJ on Mountain Base Radio. Use gnarly 80s ski slang. 2-3 sentences."
+      const sys = `You are a local food and coffee expert. Return ONLY valid JSON, no markdown, no backticks:
+{
+  "restaurants": [
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" }
+  ],
+  "coffee": [
+    { "name": "string", "vibe": "string", "mustOrder": "string" },
+    { "name": "string", "vibe": "string", "mustOrder": "string" },
+    { "name": "string", "vibe": "string", "mustOrder": "string" }
+  ]
+}`;
+      const raw = await callClaude(
+        `List popular local restaurants and coffee shops near ${selectedResort} ski resort in ${resort.region}. Focus on spots skiers actually go — apres-ski bars, burger joints, cozy cafes, etc.`,
+        sys
       );
-      setChatHistory((prev) => [...prev, { role: "bro", text: result }]);
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      setLocalSpots(parsed);
+      addLog(`LOCAL INTEL LOADED: ${selectedResort.toUpperCase()}`);
     } catch {
-      setChatHistory((prev) => [...prev, { role: "bro", text: "Static on the line, dude! Try again!" }]);
+      setLocalSpots({ error: true });
     } finally {
-      setIsChatting(false);
+      setIsLoadingSpots(false);
     }
   };
 
@@ -178,7 +190,7 @@ export default function App() {
     if (resorts[selectedResort]) {
       generateHype();
       setGearAdvice("");
-      setChatHistory([]);
+      setLocalSpots(null);
     }
   }, [selectedResort]);
 
@@ -190,11 +202,8 @@ export default function App() {
     [search, resorts]
   );
 
-  const shadow = (color) => ({ boxShadow: `6px 6px 0px ${color}` });
-
   return (
     <div className="min-h-screen bg-black text-pink-50 font-sans pb-24 overflow-x-hidden relative">
-      {/* Grid background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-10">
         <div className="absolute inset-0" style={{
           backgroundImage: "linear-gradient(to right, #ec4899 1px, transparent 1px), linear-gradient(to bottom, #ec4899 1px, transparent 1px)",
@@ -205,16 +214,15 @@ export default function App() {
       </div>
 
       <div className="relative max-w-2xl mx-auto px-4 py-8">
-        {/* Header */}
         <header className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-5xl sm:text-6xl font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-b from-pink-400 to-purple-600">
-              Blue Bird
+            <h1 className="text-5xl sm:text-6xl font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-400 to-pink-500">
+              Bluebird
             </h1>
-            <p className="text-cyan-400 text-xs font-black tracking-widest uppercase mt-1 italic">V2.2 // Encryption Secure</p>
+            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
           </div>
           <div className="flex gap-2">
-            {[{ id: "report", I: Mountain }, { id: "gear", I: Gamepad2 }, { id: "chat", I: Radio }].map((t) => (
+            {[{ id: "report", I: Mountain }, { id: "gear", I: Gamepad2 }, { id: "spots", I: UtensilsCrossed }].map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`p-3 border-2 transition-all ${activeTab === t.id ? "border-pink-500 bg-pink-500 text-black" : "border-neutral-800 text-neutral-500 hover:border-cyan-500"}`}>
                 <t.I className="w-5 h-5" />
@@ -223,17 +231,15 @@ export default function App() {
           </div>
         </header>
 
-        {/* Status bar */}
         <div className="mb-4 bg-neutral-900 border-2 border-neutral-800 p-2 font-mono text-xs uppercase tracking-tighter text-cyan-500 flex items-center gap-3 overflow-hidden">
           <div className="bg-cyan-500 text-black px-1 font-black flex items-center gap-1 shrink-0 text-xs">
             <Command className="w-2 h-2" /> STATUS
           </div>
-          <div className="flex gap-6 whitespace-nowrap overflow-hidden">
+          <div className="flex gap-4 whitespace-nowrap overflow-hidden">
             {terminalLogs.map((log, i) => <span key={i} className="opacity-80">[{log}]</span>)}
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative mb-6" ref={searchRef}>
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
             {isGlobalLoading ? <Loader2 className="h-5 w-5 text-pink-500 animate-spin" /> : <Search className="h-5 w-5 text-pink-500" />}
@@ -265,9 +271,7 @@ export default function App() {
                   className="w-full text-left px-6 py-5 bg-cyan-900/20 hover:bg-cyan-900/40 flex items-center gap-4 border-t border-cyan-500 group">
                   <Globe className="w-6 h-6 text-cyan-400" />
                   <div>
-                    <span className="font-black block uppercase italic group-hover:text-white underline underline-offset-4 text-cyan-400">
-                      FETCH DATA FOR "{search.toUpperCase()}"
-                    </span>
+                    <span className="font-black block uppercase italic group-hover:text-white underline underline-offset-4 text-cyan-400">FETCH DATA FOR "{search.toUpperCase()}"</span>
                     <span className="text-xs text-pink-500 uppercase font-bold tracking-widest">AI-Generated Snow Report</span>
                   </div>
                 </button>
@@ -284,7 +288,6 @@ export default function App() {
         )}
 
         <main>
-          {/* REPORT TAB */}
           {activeTab === "report" && resort && (
             <div className="space-y-6">
               <div className="bg-black border-2 border-pink-500 p-6 relative" style={shadow("#7c3aed")}>
@@ -295,7 +298,6 @@ export default function App() {
                   </div>
                   <div className="text-6xl font-black italic text-pink-500 tabular-nums">{resort.current.tempF}°</div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
                     <span className="text-xs font-black text-pink-500 uppercase block mb-1">Fresh Powder</span>
@@ -308,7 +310,6 @@ export default function App() {
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">TOTAL ACCUMULATION</span>
                   </div>
                 </div>
-
                 <div className="bg-neutral-900/50 border-l-4 border-pink-500 p-4 italic text-sm text-pink-100 mb-6">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-black uppercase text-pink-500 tracking-widest flex items-center gap-1">
@@ -325,7 +326,6 @@ export default function App() {
                       : `"${hypeReport || "Awaiting radio transmission..."}"`}
                   </div>
                 </div>
-
                 <div className="flex justify-around text-center pt-4 border-t border-neutral-800">
                   {[{ l: "Surface", v: resort.current.condition }, { l: "Lifts", v: resort.current.lifts }, { l: "Trails", v: resort.current.trails }].map((x) => (
                     <div key={x.l} className="px-2">
@@ -335,7 +335,6 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
               <section className="space-y-3 pt-2">
                 <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
                   <Activity className="w-3 h-3" /> Long Range Shred Forecast
@@ -353,7 +352,6 @@ export default function App() {
             </div>
           )}
 
-          {/* GEAR TAB */}
           {activeTab === "gear" && (
             <div className="bg-black border-2 border-cyan-400 p-10 text-center relative overflow-hidden" style={shadow("#ec4899")}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600" />
@@ -380,59 +378,82 @@ export default function App() {
             </div>
           )}
 
-          {/* CHAT TAB */}
-          {activeTab === "chat" && (
-            <div className="flex flex-col bg-black border-2 border-pink-500 relative overflow-hidden" style={{ height: 550, ...shadow("#06b6d4") }}>
-              <div className="p-4 border-b-2 border-pink-500 flex items-center gap-4 bg-neutral-900 z-10">
-                <div className="w-12 h-12 bg-cyan-400 flex items-center justify-center border-2 border-pink-500 text-black font-black" style={shadow("#ec4899")}>
-                  <Radio className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-black italic uppercase text-pink-500 text-sm tracking-widest leading-none mb-1">Blue Bird Bro</h3>
-                  <span className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Freq: 88.5 FM // Mountain Base Radio</span>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/80">
-                {chatHistory.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center opacity-10 text-center p-8">
-                    <Radio className="w-24 h-24 mb-6" />
-                    <p className="font-black italic uppercase text-3xl tracking-tighter">Radio Silence...</p>
-                    <p className="text-xs uppercase mt-3 tracking-widest">Send a request to the booth, dude!</p>
-                  </div>
+          {activeTab === "spots" && (
+            <div className="space-y-6">
+              <div className="bg-black border-2 border-cyan-400 p-6 text-center relative" style={shadow("#ec4899")}>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600" />
+                <UtensilsCrossed className="w-14 h-14 text-pink-500 mx-auto mb-4" />
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-1">Local Eats & Brews</h2>
+                <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest mb-6">Near {selectedResort}</p>
+                {!localSpots && !isLoadingSpots && (
+                  <button onClick={fetchLocalSpots}
+                    className="bg-pink-500 text-black font-black uppercase px-10 py-4 hover:scale-105 active:translate-y-1 transition-all text-base italic tracking-tighter"
+                    style={shadow("#06b6d4")}>
+                    FIND THE SPOTS
+                  </button>
                 )}
-                {chatHistory.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-xs p-4 text-xs italic font-bold uppercase border-2 ${m.role === "user" ? "bg-cyan-400 text-black border-cyan-400" : "bg-black text-pink-100 border-pink-500"}`}
-                      style={{ maxWidth: "85%" }}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-                {isChatting && (
-                  <div className="flex justify-start">
-                    <div className="bg-pink-500 p-2 flex gap-1 animate-pulse">
-                      <div className="w-1.5 h-1.5 bg-black" /><div className="w-1.5 h-1.5 bg-black" /><div className="w-1.5 h-1.5 bg-black" />
-                    </div>
+                {isLoadingSpots && (
+                  <div className="py-8">
+                    <Loader2 className="w-10 h-10 animate-spin mx-auto text-pink-500" />
+                    <p className="mt-4 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Scanning local intel...</p>
                   </div>
                 )}
               </div>
 
-              <div className="p-4 border-t-2 border-pink-500 flex gap-2 bg-neutral-900 z-10">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleChat(e)}
-                  placeholder="RADIO REQUEST..."
-                  className="flex-1 bg-black border-2 border-cyan-400 px-4 py-4 text-xs font-black italic text-pink-400 focus:outline-none focus:border-pink-500 placeholder:text-neutral-800"
-                />
-                <button onClick={handleChat} disabled={isChatting || !chatInput.trim()}
-                  className="bg-pink-500 text-black p-4 hover:bg-white transition-colors disabled:opacity-30 active:translate-x-1 active:translate-y-1"
-                  style={shadow("#06b6d4")}>
-                  <Send className="w-6 h-6" />
-                </button>
-              </div>
+              {localSpots && !localSpots.error && (
+                <>
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
+                      <UtensilsCrossed className="w-3 h-3" /> Restaurants
+                    </h3>
+                    {localSpots.restaurants?.map((r, i) => (
+                      <div key={i} className="bg-neutral-900 border-2 border-neutral-800 hover:border-pink-500 p-4 transition-all group">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-black uppercase italic text-white group-hover:text-pink-400 transition-colors text-sm">{r.name}</span>
+                          <span className="text-cyan-400 font-black text-xs">{r.priceRange}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 uppercase font-bold mb-2">{r.vibe}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-pink-500 font-black uppercase tracking-widest">Must Order:</span>
+                          <span className="text-xs text-neutral-300 italic">{r.mustOrder}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-black italic uppercase text-cyan-400 tracking-widest px-2 flex items-center gap-2">
+                      <Coffee className="w-3 h-3" /> Coffee Shops
+                    </h3>
+                    {localSpots.coffee?.map((c, i) => (
+                      <div key={i} className="bg-neutral-900 border-2 border-neutral-800 hover:border-cyan-500 p-4 transition-all group">
+                        <div className="mb-1">
+                          <span className="font-black uppercase italic text-white group-hover:text-cyan-400 transition-colors text-sm">{c.name}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 uppercase font-bold mb-2">{c.vibe}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-cyan-400 font-black uppercase tracking-widest">Must Order:</span>
+                          <span className="text-xs text-neutral-300 italic">{c.mustOrder}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+
+                  <div className="text-center pt-2">
+                    <button onClick={fetchLocalSpots}
+                      className="text-xs font-black uppercase text-neutral-600 hover:text-pink-500 flex items-center gap-1 mx-auto transition-colors">
+                      <RefreshCcw className="w-3 h-3" /> Refresh Picks
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {localSpots?.error && (
+                <div className="bg-red-950/40 border-2 border-red-500 p-4 flex items-center gap-3">
+                  <AlertTriangle className="text-red-500 shrink-0" />
+                  <span className="text-xs font-black uppercase text-red-500 tracking-widest">Signal lost. Could not load local spots.</span>
+                </div>
+              )}
             </div>
           )}
         </main>
