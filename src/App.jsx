@@ -39,6 +39,7 @@ export default function App() {
   const [terminalLogs, setTerminalLogs] = useState(["BOOTING SYSTEM...", "UPLINK ESTABLISHED."]);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [error, setError] = useState("");
+  const [metric, setMetric] = useState(false);
   const searchRef = useRef(null);
 
   const [hypeReport, setHypeReport] = useState("");
@@ -51,6 +52,8 @@ export default function App() {
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
   const shadow = (color) => ({ boxShadow: `6px 6px 0px ${color}` });
+  const fToC = (f) => Math.round((f - 32) * 5 / 9);
+  const inToCm = (i) => Math.round(i * 2.54);
 
   const fetchGlobalResort = async (resortName) => {
     if (!resortName || resortName.length < 3) return;
@@ -60,13 +63,17 @@ export default function App() {
     setError("");
     try {
       // Get lat/lon via geocoding
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(resortName)}&count=1`);
+      // Search with "ski resort" appended to prioritize mountain locations over cities
+      const geoQuery = encodeURIComponent(resortName + " ski resort");
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${geoQuery}&count=5`);
       const geoData = await geoRes.json();
       let lat = null, lon = null, region = "";
-      if (geoData.results && geoData.results[0]) {
-        lat = geoData.results[0].latitude;
-        lon = geoData.results[0].longitude;
-        region = [geoData.results[0].admin1, geoData.results[0].country_code].filter(Boolean).join(", ");
+      if (geoData.results && geoData.results.length > 0) {
+        // Pick highest elevation result — ski resorts are in mountains
+        const best = geoData.results.reduce((a, b) => ((b.elevation || 0) > (a.elevation || 0) ? b : a));
+        lat = best.latitude;
+        lon = best.longitude;
+        region = [best.admin1, best.country_code].filter(Boolean).join(", ");
       }
       // Get real weather forecast from Open-Meteo
       let weatherForecast = null;
@@ -122,7 +129,7 @@ export default function App() {
     try {
       const result = await callClaude(
         `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.`,
-        "You are an enthusiastic 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be totally gnarly and stoked."
+        "You are an 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. If conditions mention rain or wet, sound genuinely bummed out and sad about it. If conditions mention ice or icy, urgently warn the skier — edges matter, wipe-outs are real. Otherwise be totally gnarly and stoked."
       );
       setHypeReport(result);
     } catch {
@@ -229,10 +236,10 @@ export default function App() {
                 <svg width="40" height="22" viewBox="0 0 40 22" fill="none"><rect x="0" y="18" width="10" height="1" rx="1" fill="#22d3ee"/><rect x="1" y="20" width="7" height="1" rx="1" fill="#a5f3fc"/><rect x="4" y="22" width="4" height="1" rx="1" fill="#67e8f9"/><rect x="11" y="16" width="2" height="2" fill="#ffffff"/><rect x="13" y="16" width="2" height="2" fill="#ffffff"/><rect x="15" y="16" width="2" height="2" fill="#ffffff"/><rect x="17" y="16" width="2" height="2" fill="#ffffff"/><rect x="19" y="16" width="2" height="2" fill="#ffffff"/><rect x="21" y="16" width="2" height="2" fill="#ffffff"/><rect x="23" y="16" width="2" height="2" fill="#ffffff"/><rect x="25" y="16" width="2" height="2" fill="#ffffff"/><rect x="27" y="16" width="2" height="2" fill="#ffffff"/><rect x="29" y="16" width="2" height="2" fill="#ffffff"/><rect x="31" y="16" width="2" height="2" fill="#ffffff"/><rect x="11" y="18" width="2" height="2" fill="#ffffff"/><rect x="13" y="18" width="2" height="2" fill="#ffffff"/><rect x="15" y="18" width="2" height="2" fill="#ffffff"/><rect x="17" y="18" width="2" height="2" fill="#ffffff"/><rect x="19" y="18" width="2" height="2" fill="#ffffff"/><rect x="21" y="18" width="2" height="2" fill="#ffffff"/><rect x="23" y="18" width="2" height="2" fill="#ffffff"/><rect x="25" y="18" width="2" height="2" fill="#ffffff"/><rect x="27" y="18" width="2" height="2" fill="#ffffff"/><rect x="29" y="18" width="2" height="2" fill="#ffffff"/><rect x="31" y="18" width="2" height="2" fill="#ffffff"/><rect x="11" y="20" width="2" height="2" fill="#94a3b8"/><rect x="13" y="20" width="2" height="2" fill="#94a3b8"/><rect x="15" y="20" width="2" height="2" fill="#94a3b8"/><rect x="17" y="20" width="2" height="2" fill="#94a3b8"/><rect x="19" y="20" width="2" height="2" fill="#94a3b8"/><rect x="21" y="20" width="2" height="2" fill="#94a3b8"/><rect x="23" y="20" width="2" height="2" fill="#94a3b8"/><rect x="25" y="20" width="2" height="2" fill="#94a3b8"/><rect x="27" y="20" width="2" height="2" fill="#94a3b8"/><rect x="29" y="20" width="2" height="2" fill="#94a3b8"/><rect x="31" y="20" width="2" height="2" fill="#94a3b8"/><rect x="18" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="20" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="22" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="18" y="2" width="2" height="2" fill="#22d3ee"/><rect x="20" y="2" width="2" height="2" fill="#22d3ee"/><rect x="22" y="2" width="2" height="2" fill="#22d3ee"/><rect x="24" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="4" width="2" height="2" fill="#22d3ee"/><rect x="18" y="4" width="2" height="2" fill="#22d3ee"/><rect x="20" y="4" width="2" height="2" fill="#22d3ee"/><rect x="22" y="4" width="2" height="2" fill="#22d3ee"/><rect x="24" y="4" width="2" height="2" fill="#22d3ee"/><rect x="26" y="4" width="2" height="2" fill="#0a0a1a"/><rect x="14" y="6" width="2" height="2" fill="#0e7490"/><rect x="16" y="6" width="2" height="2" fill="#22d3ee"/><rect x="18" y="6" width="2" height="2" fill="#22d3ee"/><rect x="20" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="6" width="2" height="2" fill="#22d3ee"/><rect x="26" y="6" width="2" height="2" fill="#fbbf24"/><rect x="28" y="6" width="2" height="2" fill="#fbbf24"/><rect x="12" y="8" width="2" height="2" fill="#0e7490"/><rect x="14" y="8" width="2" height="2" fill="#0e7490"/><rect x="16" y="8" width="2" height="2" fill="#22d3ee"/><rect x="18" y="8" width="2" height="2" fill="#22d3ee"/><rect x="20" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="8" width="2" height="2" fill="#22d3ee"/><rect x="26" y="8" width="2" height="2" fill="#22d3ee"/><rect x="14" y="10" width="2" height="2" fill="#0e7490"/><rect x="16" y="10" width="2" height="2" fill="#0e7490"/><rect x="18" y="10" width="2" height="2" fill="#22d3ee"/><rect x="20" y="10" width="2" height="2" fill="#22d3ee"/><rect x="22" y="10" width="2" height="2" fill="#22d3ee"/><rect x="24" y="10" width="2" height="2" fill="#22d3ee"/><rect x="16" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="12" width="2" height="2" fill="#22d3ee"/><rect x="20" y="12" width="2" height="2" fill="#22d3ee"/><rect x="22" y="12" width="2" height="2" fill="#22d3ee"/><rect x="24" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="14" width="2" height="2" fill="#0e7490"/><rect x="20" y="14" width="2" height="2" fill="#22d3ee"/><rect x="22" y="14" width="2" height="2" fill="#0e7490"/></svg>
               </div>
               <h1 className="font-black italic tracking-tighter uppercase" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">I</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">BLUEBIRD</span>
               </h1>
             </div>
-            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
+            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic leading-tight">AI Powered Mountain Reports</p>
           </div>
           <div className="flex gap-2">
             {[{ id: "report", I: Mountain }, { id: "gear", I: Gamepad2 }, { id: "spots", I: UtensilsCrossed }].map((t) => (
@@ -312,20 +319,21 @@ export default function App() {
               <div className="bg-black border-2 border-pink-500 p-6 relative" style={shadow("#7c3aed")}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-4xl font-black italic uppercase text-cyan-400 tracking-tighter truncate max-w-xs mb-2">{selectedResort}</h2>
+                    <h2 className="text-2xl sm:text-4xl font-black italic uppercase text-cyan-400 tracking-tighter mb-2 leading-tight">{selectedResort}</h2>
                     <span className="text-xs text-neutral-500 uppercase font-black tracking-widest">{resort.region}</span>
+                    <button onClick={() => setMetric(m => !m)} className="mt-2 text-xs font-black uppercase tracking-widest border border-neutral-700 px-2 py-1 hover:border-cyan-500 hover:text-cyan-400 transition-colors text-neutral-500">{metric ? "°F / IN" : "°C / CM"}</button>
                   </div>
-                  <div className="text-6xl font-black italic text-pink-500 tabular-nums">{resort.current.tempF}°</div>
+                  <div className="text-4xl sm:text-6xl font-black italic text-pink-500 tabular-nums shrink-0 ml-2">{metric ? fToC(resort.current.tempF) : resort.current.tempF}°</div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
                     <span className="text-xs font-black text-pink-500 uppercase block mb-1">Fresh Powder</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{resort.current.newSnowIn}"</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.newSnowIn) : resort.current.newSnowIn}{metric ? "cm" : """}</div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">24H SESSION DUMP</span>
                   </div>
                   <div className="bg-neutral-900 border-2 border-pink-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#06b6d4")}>
                     <span className="text-xs font-black text-cyan-400 uppercase block mb-1">Mountain Base</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{resort.current.baseIn}"</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.baseIn) : resort.current.baseIn}{metric ? "cm" : """}</div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">TOTAL ACCUMULATION</span>
                   </div>
                 </div>
@@ -364,10 +372,12 @@ export default function App() {
                       <span className="font-black italic uppercase text-xs text-white tracking-widest">{f.day}</span>
                       <span className="text-neutral-500 text-xs font-mono">{f.date || new Date(Date.now() + i * 86400000).toLocaleDateString("en-US", {month:"short", day:"numeric"})}</span>
                     </div>
-                    <span className="text-pink-400 text-xs font-bold tabular-nums">{f.high}° / {f.low}°</span>
-                    {f.snow && f.snow !== '0"' && f.snow !== "0in"
-                      ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{f.snow} FRESHIES</span>
-                      : <span className="text-xs text-neutral-700 italic font-black uppercase tracking-widest">Blue Bird</span>}
+                    <span className="text-pink-400 text-xs font-bold tabular-nums">{metric ? fToC(f.high) : f.high}° / {metric ? fToC(f.low) : f.low}°</span>
+                    <div className="w-40 text-right">
+                      {f.snow && f.snow !== '0"' && f.snow !== "0in" && f.snow !== "0"
+                        ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{metric ? inToCm(parseFloat(f.snow)) + "cm" : f.snow} FRESHIES</span>
+                        : <span className="text-xs text-neutral-600 italic font-black uppercase tracking-widest">Nada</span>}
+                    </div>
                   </div>
                 ))}
               </section>
