@@ -1,97 +1,41 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// Load Work Sans font
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@1,800&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
 import {
-  Mountain,
-  Search,
-  Snowflake,
-  ChevronRight,
-  Sparkles,
-  Loader2,
-  Send,
-  Radio,
-  Gamepad2,
-  RefreshCcw,
-  Globe,
-  AlertTriangle,
-  Command,
-  Activity
+  Mountain, Search, ChevronRight, Sparkles, Loader2,
+  Gamepad2, RefreshCcw, Globe, AlertTriangle, Command,
+  Activity, UtensilsCrossed, Coffee
 } from 'lucide-react';
 
-const INITIAL_RESORT_DATA = {
-  "Alpental": {
-    region: "Washington, USA",
-    current: {
-      tempF: 28, tempC: -2, wind: "10 mph W", newSnowIn: 14, baseIn: 120,
-      condition: "Deep Powder", lifts: "4/4", trails: "24/24"
-    },
-    forecast: [
-      { day: "Sunday", high: 30, low: 22, snow: '12"' },
-      { day: "Monday", high: 28, low: 18, snow: '6"' },
-      { day: "Tuesday", high: 32, low: 24, snow: '2"' },
-      { day: "Wednesday", high: 34, low: 28, snow: '0"' },
-      { day: "Thursday", high: 31, low: 22, snow: '8"' },
-    ]
-  },
-  "Vail Mountain": {
-    region: "Colorado, USA",
-    current: {
-      tempF: 20, tempC: -7, wind: "5 mph NW", newSnowIn: 6, baseIn: 48,
-      condition: "Powder", lifts: "27/33", trails: "221/277"
-    },
-    forecast: [
-      { day: "Sunday", high: 27, low: 17, snow: '5"' },
-      { day: "Monday", high: 22, low: 10, snow: '2"' },
-      { day: "Tuesday", high: 43, low: 17, snow: '0"' },
-      { day: "Wednesday", high: 47, low: 24, snow: '0"' },
-      { day: "Thursday", high: 44, low: 29, snow: '1"' },
-    ]
-  },
-  "Mammoth Mountain": {
-    region: "California, USA",
-    current: {
-      tempF: 24, tempC: -4, wind: "15 mph SW", newSnowIn: 8, baseIn: 92,
-      condition: "Packed Powder", lifts: "21/25", trails: "145/175"
-    },
-    forecast: [
-      { day: "Sunday", high: 28, low: 18, snow: '4"' },
-      { day: "Monday", high: 25, low: 15, snow: '10"' },
-      { day: "Tuesday", high: 22, low: 12, snow: '2"' },
-      { day: "Wednesday", high: 30, low: 20, snow: '0"' },
-      { day: "Thursday", high: 35, low: 25, snow: '0"' },
-    ]
-  }
-};
 
-const callClaude = async (userPrompt, systemPrompt, isJson = false) => {
-  const messages = [{ role: "user", content: userPrompt }];
-  const body = {
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages,
-  };
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+const callClaude = async (userPrompt, systemPrompt) => {
+  const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
   });
-
   if (!response.ok) throw new Error(`Status ${response.status}`);
   const data = await response.json();
-  let text = data.content?.map(b => b.text || "").join("") || "";
-
-  if (isJson) {
-    text = text.replace(/```json|```/g, "").trim();
-  }
-  return text;
+  return data.content?.map((b) => b.text || "").join("") || "";
 };
 
-const App = () => {
+export default function App() {
   const [search, setSearch] = useState("");
-  const [resorts, setResorts] = useState(INITIAL_RESORT_DATA);
-  const [selectedResort, setSelectedResort] = useState("Alpental");
+  const [resorts, setResorts] = useState({});
+  const [selectedResort, setSelectedResort] = useState(null);
+  const defaultResort = "Summit at Snoqualmie";
   const [isSearching, setIsSearching] = useState(false);
-  const [activeTab, setActiveTab] = useState('report');
+  const [activeTab, setActiveTab] = useState("report");
   const [terminalLogs, setTerminalLogs] = useState(["BOOTING SYSTEM...", "UPLINK ESTABLISHED."]);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const [error, setError] = useState("");
@@ -101,15 +45,12 @@ const App = () => {
   const [isGeneratingHype, setIsGeneratingHype] = useState(false);
   const [gearAdvice, setGearAdvice] = useState("");
   const [isGeneratingGear, setIsGeneratingGear] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
-  const [isChatting, setIsChatting] = useState(false);
+  const [localSpots, setLocalSpots] = useState(null);
+  const [isLoadingSpots, setIsLoadingSpots] = useState(false);
 
   const resort = resorts[selectedResort];
-
-  const addLog = (msg) => {
-    setTerminalLogs(prev => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
-  };
+  const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
+  const shadow = (color) => ({ boxShadow: `6px 6px 0px ${color}` });
 
   const fetchGlobalResort = async (resortName) => {
     if (!resortName || resortName.length < 3) return;
@@ -117,36 +58,57 @@ const App = () => {
     setIsGlobalLoading(true);
     setIsSearching(false);
     setError("");
-
     try {
-      const sys = `You are a ski resort data expert. Generate realistic, plausible snow condition data for the given ski resort based on your knowledge. Return ONLY a valid JSON object with NO markdown, NO backticks, NO extra text. The JSON must have this exact structure:
+      // Get lat/lon via geocoding
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(resortName)}&count=1`);
+      const geoData = await geoRes.json();
+      let lat = null, lon = null, region = "";
+      if (geoData.results && geoData.results[0]) {
+        lat = geoData.results[0].latitude;
+        lon = geoData.results[0].longitude;
+        region = [geoData.results[0].admin1, geoData.results[0].country_code].filter(Boolean).join(", ");
+      }
+      // Get real weather forecast from Open-Meteo
+      let weatherForecast = null;
+      if (lat) {
+        const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto&forecast_days=5`);
+        const wxData = await wxRes.json();
+        if (wxData.daily) {
+          weatherForecast = wxData.daily.time.map((date, i) => {
+            const d = new Date(date + "T12:00:00");
+            const snowIn = Math.round(wxData.daily.snowfall_sum[i] * 10) / 10;
+            return {
+              day: d.toLocaleDateString("en-US", { weekday: "long" }),
+              date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              high: Math.round(wxData.daily.temperature_2m_max[i]),
+              low: Math.round(wxData.daily.temperature_2m_min[i]),
+              snow: snowIn > 0 ? `${snowIn}"` : "0"
+            };
+          });
+        }
+      }
+      // Get resort details from Claude
+      const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
 {
-  "region": "State/Country string",
-  "current": {
-    "tempF": number,
-    "wind": "speed and direction string",
-    "newSnowIn": number,
-    "baseIn": number,
-    "condition": "surface condition string",
-    "lifts": "open/total string like 12/15",
-    "trails": "open/total string like 80/100"
-  },
+  "region": "State/Country",
+  "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" },
   "forecast": [
-    {"day": "Friday", "high": number, "low": number, "snow": "Nin or 0in"},
-    {"day": "Saturday", "high": number, "low": number, "snow": "Nin or 0in"},
-    {"day": "Sunday", "high": number, "low": number, "snow": "Nin or 0in"},
-    {"day": "Monday", "high": number, "low": number, "snow": "Nin or 0in"},
-    {"day": "Tuesday", "high": number, "low": number, "snow": "Nin or 0in"}
+    {"day":"Sunday","high":number,"low":number,"snow":"Nin"},
+    {"day":"Monday","high":number,"low":number,"snow":"Nin"},
+    {"day":"Tuesday","high":number,"low":number,"snow":"Nin"},
+    {"day":"Wednesday","high":number,"low":number,"snow":"Nin"},
+    {"day":"Thursday","high":number,"low":number,"snow":"Nin"}
   ]
 }`;
-      const result = await callClaude(`Generate current snow report data for: ${resortName}`, sys, true);
-      const parsed = JSON.parse(result);
-      setResorts(prev => ({ ...prev, [resortName]: parsed }));
+      const raw = await callClaude(`Snow report for: ${resortName}`, sys);
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      if (weatherForecast) parsed.forecast = weatherForecast;
+      if (region) parsed.region = region;
+      setResorts((prev) => ({ ...prev, [resortName]: parsed }));
       setSelectedResort(resortName);
       setSearch("");
       addLog(`TRANSMISSION COMPLETE: ${resortName.toUpperCase()} IS LIVE.`);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("SIGNAL LOST: UNABLE TO DECODE MOUNTAIN DATA.");
       addLog("FETCH ERROR: CONNECTION FAILURE.");
     } finally {
@@ -159,11 +121,11 @@ const App = () => {
     setIsGeneratingHype(true);
     try {
       const result = await callClaude(
-        `Generate a hyped ski report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, conditions: ${resort.current.condition}.`,
-        "You are an enthusiastic 80s ski announcer. Use radical 80s ski slang. Keep it to 2-3 sentences max. Be totally gnarly and stoked."
+        `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.`,
+        "You are an enthusiastic 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be totally gnarly and stoked."
       );
       setHypeReport(result);
-    } catch (e) {
+    } catch {
       setHypeReport("Stoke levels are high, vibes are righteous!");
     } finally {
       setIsGeneratingHype(false);
@@ -175,91 +137,118 @@ const App = () => {
     setIsGeneratingGear(true);
     try {
       const result = await callClaude(
-        `Weather: ${resort.current.tempF}F, ${resort.current.condition} conditions at ${selectedResort}. Suggest radical 80s neon ski gear.`,
-        "You are an 80s ski fashion guru. Recommend specific neon gear items, brands of the era, and styling tips. Keep it fun, radical, and totally 80s. 3-4 sentences max."
+        `${resort.current.tempF}F, ${resort.current.condition} at ${selectedResort}. Suggest radical 80s neon ski gear.`,
+        "You are an 80s ski fashion guru. Recommend neon gear, era brands, styling tips. Fun, radical, totally 80s. 3-4 sentences."
       );
       setGearAdvice(result);
-    } catch (e) {
+    } catch {
       setGearAdvice("Just rock the neon pink one-piece, man!");
     } finally {
       setIsGeneratingGear(false);
     }
   };
 
-  const handleChat = async (e) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatting) return;
-    const msg = chatInput;
-    setChatInput("");
-    setChatHistory(prev => [...prev, { role: 'user', text: msg }]);
-    setIsChatting(true);
+  const fetchLocalSpots = async () => {
+    if (isLoadingSpots) return;
+    setIsLoadingSpots(true);
+    setLocalSpots(null);
     try {
-      const result = await callClaude(
-        `The user says: "${msg}". Current resort: ${selectedResort}, ${resort?.current?.tempF}F, ${resort?.current?.condition}.`,
-        "You are Blue Bird Bro, a radical 80s ski bum DJ on Mountain Base Radio. Use gnarly 80s ski slang, be enthusiastic and helpful about skiing conditions and tips. Keep responses to 2-3 sentences."
+      const sys = `You are a local food and coffee expert. Return ONLY valid JSON, no markdown, no backticks:
+{
+  "restaurants": [
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" },
+    { "name": "string", "vibe": "string", "mustOrder": "string", "priceRange": "$/$$/$$$/$$$$" }
+  ],
+  "coffee": [
+    { "name": "string", "vibe": "string", "mustOrder": "string" },
+    { "name": "string", "vibe": "string", "mustOrder": "string" },
+    { "name": "string", "vibe": "string", "mustOrder": "string" }
+  ]
+}`;
+      const raw = await callClaude(
+        `List popular local restaurants and coffee shops near ${selectedResort} ski resort in ${resort.region}. Focus on spots skiers actually go — apres-ski bars, burger joints, cozy cafes, etc.`,
+        sys
       );
-      setChatHistory(prev => [...prev, { role: 'bro', text: result }]);
-    } catch (e) {
-      setChatHistory(prev => [...prev, { role: 'bro', text: "Static on the line, dude! Try again!" }]);
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      setLocalSpots(parsed);
+      addLog(`LOCAL INTEL LOADED: ${selectedResort.toUpperCase()}`);
+    } catch {
+      setLocalSpots({ error: true });
     } finally {
-      setIsChatting(false);
+      setIsLoadingSpots(false);
     }
   };
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
+    const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setIsSearching(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    fetchGlobalResort(defaultResort);
   }, []);
 
   useEffect(() => {
     if (resorts[selectedResort]) {
       generateHype();
       setGearAdvice("");
-      setChatHistory([]);
+      setLocalSpots(null);
     }
   }, [selectedResort]);
 
-  const filteredResorts = useMemo(() => {
-    return Object.keys(resorts).filter(name =>
-      name.toLowerCase().includes(search.toLowerCase()) ||
-      resorts[name].region.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search, resorts]);
+  const filteredResorts = useMemo(
+    () => Object.keys(resorts).filter((n) =>
+      n.toLowerCase().includes(search.toLowerCase()) ||
+      resorts[n].region.toLowerCase().includes(search.toLowerCase())
+    ),
+    [search, resorts]
+  );
 
   return (
     <div className="min-h-screen bg-black text-pink-50 font-sans pb-24 overflow-x-hidden relative">
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-10">
         <div className="absolute inset-0" style={{
-          backgroundImage: `linear-gradient(to right, #ec4899 1px, transparent 1px), linear-gradient(to bottom, #ec4899 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-          transform: 'perspective(500px) rotateX(60deg) translateY(0%)',
-          height: '200%', top: '-50%'
+          backgroundImage: "linear-gradient(to right, #ec4899 1px, transparent 1px), linear-gradient(to bottom, #ec4899 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+          transform: "perspective(500px) rotateX(60deg)",
+          height: "200%", top: "-50%",
         }} />
       </div>
 
       <div className="relative max-w-2xl mx-auto px-4 py-8">
         <header className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-5xl sm:text-6xl font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-b from-pink-400 to-purple-600" style={{filter: 'drop-shadow(0 0 8px rgba(236,72,153,0.5))'}}>
-              Blue Bird
-            </h1>
-            <p className="text-cyan-400 text-xs font-black tracking-widest uppercase mt-1 italic">V2.2 // Claude Powered</p>
+            <div style={{display:"inline-flex", flexDirection:"column", alignItems:"flex-start"}}>
+              <div style={{paddingLeft:"calc(13.2em - 22px)", marginBottom:"-8px", lineHeight:1}}>
+                <svg width="40" height="22" viewBox="0 0 40 22" fill="none"><rect x="0" y="18" width="10" height="1" rx="1" fill="#22d3ee"/><rect x="1" y="20" width="7" height="1" rx="1" fill="#a5f3fc"/><rect x="4" y="22" width="4" height="1" rx="1" fill="#67e8f9"/><rect x="11" y="16" width="2" height="2" fill="#ffffff"/><rect x="13" y="16" width="2" height="2" fill="#ffffff"/><rect x="15" y="16" width="2" height="2" fill="#ffffff"/><rect x="17" y="16" width="2" height="2" fill="#ffffff"/><rect x="19" y="16" width="2" height="2" fill="#ffffff"/><rect x="21" y="16" width="2" height="2" fill="#ffffff"/><rect x="23" y="16" width="2" height="2" fill="#ffffff"/><rect x="25" y="16" width="2" height="2" fill="#ffffff"/><rect x="27" y="16" width="2" height="2" fill="#ffffff"/><rect x="29" y="16" width="2" height="2" fill="#ffffff"/><rect x="31" y="16" width="2" height="2" fill="#ffffff"/><rect x="11" y="18" width="2" height="2" fill="#ffffff"/><rect x="13" y="18" width="2" height="2" fill="#ffffff"/><rect x="15" y="18" width="2" height="2" fill="#ffffff"/><rect x="17" y="18" width="2" height="2" fill="#ffffff"/><rect x="19" y="18" width="2" height="2" fill="#ffffff"/><rect x="21" y="18" width="2" height="2" fill="#ffffff"/><rect x="23" y="18" width="2" height="2" fill="#ffffff"/><rect x="25" y="18" width="2" height="2" fill="#ffffff"/><rect x="27" y="18" width="2" height="2" fill="#ffffff"/><rect x="29" y="18" width="2" height="2" fill="#ffffff"/><rect x="31" y="18" width="2" height="2" fill="#ffffff"/><rect x="11" y="20" width="2" height="2" fill="#94a3b8"/><rect x="13" y="20" width="2" height="2" fill="#94a3b8"/><rect x="15" y="20" width="2" height="2" fill="#94a3b8"/><rect x="17" y="20" width="2" height="2" fill="#94a3b8"/><rect x="19" y="20" width="2" height="2" fill="#94a3b8"/><rect x="21" y="20" width="2" height="2" fill="#94a3b8"/><rect x="23" y="20" width="2" height="2" fill="#94a3b8"/><rect x="25" y="20" width="2" height="2" fill="#94a3b8"/><rect x="27" y="20" width="2" height="2" fill="#94a3b8"/><rect x="29" y="20" width="2" height="2" fill="#94a3b8"/><rect x="31" y="20" width="2" height="2" fill="#94a3b8"/><rect x="18" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="20" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="22" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="18" y="2" width="2" height="2" fill="#22d3ee"/><rect x="20" y="2" width="2" height="2" fill="#22d3ee"/><rect x="22" y="2" width="2" height="2" fill="#22d3ee"/><rect x="24" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="4" width="2" height="2" fill="#22d3ee"/><rect x="18" y="4" width="2" height="2" fill="#22d3ee"/><rect x="20" y="4" width="2" height="2" fill="#22d3ee"/><rect x="22" y="4" width="2" height="2" fill="#22d3ee"/><rect x="24" y="4" width="2" height="2" fill="#22d3ee"/><rect x="26" y="4" width="2" height="2" fill="#0a0a1a"/><rect x="14" y="6" width="2" height="2" fill="#0e7490"/><rect x="16" y="6" width="2" height="2" fill="#22d3ee"/><rect x="18" y="6" width="2" height="2" fill="#22d3ee"/><rect x="20" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="6" width="2" height="2" fill="#22d3ee"/><rect x="26" y="6" width="2" height="2" fill="#fbbf24"/><rect x="28" y="6" width="2" height="2" fill="#fbbf24"/><rect x="12" y="8" width="2" height="2" fill="#0e7490"/><rect x="14" y="8" width="2" height="2" fill="#0e7490"/><rect x="16" y="8" width="2" height="2" fill="#22d3ee"/><rect x="18" y="8" width="2" height="2" fill="#22d3ee"/><rect x="20" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="8" width="2" height="2" fill="#22d3ee"/><rect x="26" y="8" width="2" height="2" fill="#22d3ee"/><rect x="14" y="10" width="2" height="2" fill="#0e7490"/><rect x="16" y="10" width="2" height="2" fill="#0e7490"/><rect x="18" y="10" width="2" height="2" fill="#22d3ee"/><rect x="20" y="10" width="2" height="2" fill="#22d3ee"/><rect x="22" y="10" width="2" height="2" fill="#22d3ee"/><rect x="24" y="10" width="2" height="2" fill="#22d3ee"/><rect x="16" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="12" width="2" height="2" fill="#22d3ee"/><rect x="20" y="12" width="2" height="2" fill="#22d3ee"/><rect x="22" y="12" width="2" height="2" fill="#22d3ee"/><rect x="24" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="14" width="2" height="2" fill="#0e7490"/><rect x="20" y="14" width="2" height="2" fill="#22d3ee"/><rect x="22" y="14" width="2" height="2" fill="#0e7490"/></svg>
+              </div>
+              <h1 className="font-black italic tracking-tighter uppercase" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-pink-500">BLUEB</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">I</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">RD</span>
+              </h1>
+            </div>
+            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
           </div>
           <div className="flex gap-2">
-            {[{id:'report', i:Mountain}, {id:'gear', i:Gamepad2}, {id:'chat', i:Radio}].map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`p-3 border-2 transition-all ${activeTab === t.id ? 'border-pink-500 bg-pink-500 text-black' : 'border-neutral-800 text-neutral-500 hover:border-cyan-500'}`}>
-                <t.i className="w-5 h-5" />
+            {[{ id: "report", I: Mountain }, { id: "gear", I: Gamepad2 }, { id: "spots", I: UtensilsCrossed }].map((t) => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                className={`p-3 border-2 transition-all ${activeTab === t.id ? "border-pink-500 bg-pink-500 text-black" : "border-neutral-800 text-neutral-500 hover:border-cyan-500"}`}>
+                <t.I className="w-5 h-5" />
               </button>
             ))}
           </div>
         </header>
 
         <div className="mb-4 bg-neutral-900 border-2 border-neutral-800 p-2 font-mono text-xs uppercase tracking-tighter text-cyan-500 flex items-center gap-3 overflow-hidden">
-          <div className="bg-cyan-500 text-black px-1 font-black flex items-center gap-1 shrink-0 text-xs"><Command className="w-2 h-2" /> STATUS</div>
-          <div className="flex gap-6 whitespace-nowrap overflow-hidden">
+          <div className="bg-cyan-500 text-black px-1 font-black flex items-center gap-1 shrink-0 text-xs">
+            <Command className="w-2 h-2" /> STATUS
+          </div>
+          <div className="flex gap-4 whitespace-nowrap overflow-hidden">
             {terminalLogs.map((log, i) => <span key={i} className="opacity-80">[{log}]</span>)}
           </div>
         </div>
@@ -271,18 +260,18 @@ const App = () => {
           <input
             type="text"
             className="w-full bg-black border-2 border-cyan-500 py-4 pl-12 pr-4 focus:outline-none focus:border-pink-500 text-lg placeholder:text-neutral-700"
-            style={{boxShadow: '6px 6px 0px #ec4899'}}
+            style={shadow("#ec4899")}
             placeholder="SEARCH ANY PEAK..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setIsSearching(true); }}
             onFocus={() => setIsSearching(true)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchGlobalResort(search)}
+            onKeyDown={(e) => e.key === "Enter" && fetchGlobalResort(search)}
           />
-
           {isSearching && (
-            <div className="absolute z-50 w-full mt-2 bg-black border-2 border-pink-500" style={{boxShadow: '10px 10px 0px #06b6d4'}}>
-              {filteredResorts.map(name => (
-                <button key={name} onClick={() => { setSelectedResort(name); setSearch(""); setIsSearching(false); }} className="w-full text-left px-6 py-4 hover:bg-neutral-900 border-b border-neutral-900 flex justify-between group">
+            <div className="absolute z-50 w-full mt-2 bg-black border-2 border-pink-500" style={shadow("#06b6d4")}>
+              {filteredResorts.map((name) => (
+                <button key={name} onClick={() => { setSelectedResort(name); setSearch(""); setIsSearching(false); }}
+                  className="w-full text-left px-6 py-4 hover:bg-neutral-900 border-b border-neutral-900 flex justify-between group">
                   <div>
                     <span className="font-black block uppercase italic group-hover:text-pink-500 text-sm">{name}</span>
                     <span className="text-xs text-cyan-500 uppercase font-bold">{resorts[name].region}</span>
@@ -291,11 +280,12 @@ const App = () => {
                 </button>
               ))}
               {search.length > 2 && (
-                <button onClick={() => fetchGlobalResort(search)} className="w-full text-left px-6 py-5 bg-cyan-900/20 hover:bg-cyan-900/40 flex items-center gap-4 border-t border-cyan-500 group">
+                <button onClick={() => fetchGlobalResort(search)}
+                  className="w-full text-left px-6 py-5 bg-cyan-900/20 hover:bg-cyan-900/40 flex items-center gap-4 border-t border-cyan-500 group">
                   <Globe className="w-6 h-6 text-cyan-400" />
-                  <div className="flex-1 text-cyan-400">
-                    <span className="font-black block uppercase italic group-hover:text-white underline underline-offset-4">FETCH DATA FOR "{search.toUpperCase()}"</span>
-                    <span className="text-xs text-pink-500 uppercase font-bold tracking-widest mt-1">AI-Generated Snow Report</span>
+                  <div>
+                    <span className="font-black block uppercase italic group-hover:text-white underline underline-offset-4 text-cyan-400">FETCH DATA FOR "{search.toUpperCase()}"</span>
+                    <span className="text-xs text-pink-500 uppercase font-bold tracking-widest">AI-Generated Snow Report</span>
                   </div>
                 </button>
               )}
@@ -306,14 +296,20 @@ const App = () => {
         {error && (
           <div className="mb-6 bg-red-950/40 border-2 border-red-500 p-4 flex items-center gap-3">
             <AlertTriangle className="text-red-500 shrink-0" />
-            <span className="text-xs font-black uppercase text-red-500 tracking-widest leading-tight">{error}</span>
+            <span className="text-xs font-black uppercase text-red-500 tracking-widest">{error}</span>
           </div>
         )}
 
         <main>
-          {activeTab === 'report' && resort && (
+          {activeTab === "report" && !resort && !isGlobalLoading && (
+            <div className="text-center py-20">
+              <p className="text-2xl font-black italic uppercase tracking-widest text-neutral-700">Search any peak to begin</p>
+              <p className="text-xs font-mono mt-2 text-neutral-800 tracking-widest">↑ TYPE A RESORT ABOVE ↑</p>
+            </div>
+          )}
+          {activeTab === "report" && resort && (
             <div className="space-y-6">
-              <div className="bg-black border-2 border-pink-500 p-6 relative" style={{boxShadow: '12px 12px 0px #7c3aed'}}>
+              <div className="bg-black border-2 border-pink-500 p-6 relative" style={shadow("#7c3aed")}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-4xl font-black italic uppercase text-cyan-400 tracking-tighter truncate max-w-xs mb-2">{selectedResort}</h2>
@@ -321,84 +317,82 @@ const App = () => {
                   </div>
                   <div className="text-6xl font-black italic text-pink-500 tabular-nums">{resort.current.tempF}°</div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={{boxShadow: '4px 4px 0px #ec4899'}}>
+                  <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
                     <span className="text-xs font-black text-pink-500 uppercase block mb-1">Fresh Powder</span>
                     <div className="text-4xl font-black italic text-white leading-none tabular-nums">{resort.current.newSnowIn}"</div>
-                    <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block tracking-tighter">24H SESSION DUMP</span>
+                    <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">24H SESSION DUMP</span>
                   </div>
-                  <div className="bg-neutral-900 border-2 border-pink-500 p-4 hover:bg-neutral-800 transition-colors" style={{boxShadow: '4px 4px 0px #06b6d4'}}>
+                  <div className="bg-neutral-900 border-2 border-pink-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#06b6d4")}>
                     <span className="text-xs font-black text-cyan-400 uppercase block mb-1">Mountain Base</span>
                     <div className="text-4xl font-black italic text-white leading-none tabular-nums">{resort.current.baseIn}"</div>
-                    <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block tracking-tighter">TOTAL ACCUMULATION</span>
+                    <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">TOTAL ACCUMULATION</span>
                   </div>
                 </div>
-
-                <div className="bg-neutral-900/50 border-l-4 border-pink-500 p-4 italic text-sm text-pink-100 mb-6 relative">
+                <div className="bg-neutral-900/50 border-l-4 border-pink-500 p-4 italic text-sm text-pink-100 mb-6">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-black uppercase text-pink-500 tracking-widest flex items-center gap-1">
                       <Sparkles className="w-3 h-3" /> The Rad Report
                     </span>
-                    <button onClick={generateHype} disabled={isGeneratingHype} className="text-xs uppercase font-black text-cyan-400 flex items-center gap-1 hover:text-white transition-colors">
+                    <button onClick={generateHype} disabled={isGeneratingHype}
+                      className="text-xs uppercase font-black text-cyan-400 flex items-center gap-1 hover:text-white transition-colors">
                       {isGeneratingHype ? <Loader2 className="w-2 h-2 animate-spin" /> : <RefreshCcw className="w-2 h-2" />} RE-SYNC
                     </button>
                   </div>
                   <div className="min-h-12 leading-relaxed py-1">
-                    {isGeneratingHype ? (
-                      <div className="flex items-center gap-2 opacity-50"><Loader2 className="w-3 h-3 animate-spin" /> <span>DECRYPTING VIBES...</span></div>
-                    ) : `"${hypeReport || "Awaiting radio transmission..."}"`}
+                    {isGeneratingHype
+                      ? <div className="flex items-center gap-2 opacity-50"><Loader2 className="w-3 h-3 animate-spin" /><span>DECRYPTING VIBES...</span></div>
+                      : `"${hypeReport || "Awaiting radio transmission..."}"`}
                   </div>
                 </div>
-
-                <div className="flex justify-around text-center pt-4 border-t border-neutral-800 bg-neutral-950/30 rounded-b">
-                  {[{l:'Surface', v:resort.current.condition}, {l:'Lifts', v:resort.current.lifts}, {l:'Trails', v:resort.current.trails}].map(x => (
+                <div className="flex justify-around text-center pt-4 border-t border-neutral-800">
+                  {[{ l: "Surface", v: resort.current.condition }, { l: "Lifts", v: resort.current.lifts }, { l: "Trails", v: resort.current.trails }].map((x) => (
                     <div key={x.l} className="px-2">
                       <span className="block text-xs text-neutral-600 uppercase font-black mb-1">{x.l}</span>
-                      <span className="text-xs font-black text-cyan-400 uppercase italic tracking-widest truncate max-w-20 block">{x.v}</span>
+                      <span className="text-xs font-black text-cyan-400 uppercase italic tracking-widest">{x.v}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
               <section className="space-y-3 pt-2">
                 <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
                   <Activity className="w-3 h-3" /> Long Range Shred Forecast
                 </h3>
                 {resort.forecast.map((f, i) => (
-                  <div key={f.day+i} className={`bg-neutral-900 border-2 p-4 flex justify-between items-center transition-all ${i===0?'border-cyan-400':'border-neutral-900 opacity-60 hover:opacity-100'}`}>
-                    <div className="flex flex-col w-24"><span className="font-black italic uppercase text-xs text-white tracking-widest">{f.day}</span><span className="text-neutral-500 text-xs font-mono">{new Date(Date.now()+i*86400000).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span></div>
-                    <div className="flex gap-4 text-xs font-bold text-neutral-500 uppercase tabular-nums">
-                      <span className="text-pink-400">{f.high}° / {f.low}°</span>
+                  <div key={f.day + i} className={`bg-neutral-900 border-2 p-4 flex justify-between items-center transition-all ${i === 0 ? "border-cyan-400" : "border-neutral-900 opacity-60 hover:opacity-100"}`}>
+                    <div className="flex flex-col w-24">
+                      <span className="font-black italic uppercase text-xs text-white tracking-widest">{f.day}</span>
+                      <span className="text-neutral-500 text-xs font-mono">{f.date || new Date(Date.now() + i * 86400000).toLocaleDateString("en-US", {month:"short", day:"numeric"})}</span>
                     </div>
-                    {f.snow && f.snow !== '0"' && f.snow !== '0in' ? (
-                      <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={{boxShadow: '3px 3px 0px #ec4899'}}>
-                        +{f.snow} FRESHIES
-                      </span>
-                    ) : (
-                      <span className="text-xs text-neutral-700 italic font-black uppercase tracking-widest">Blue Bird</span>
-                    )}
+                    <span className="text-pink-400 text-xs font-bold tabular-nums">{f.high}° / {f.low}°</span>
+                    {f.snow && f.snow !== '0"' && f.snow !== "0in"
+                      ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{f.snow} FRESHIES</span>
+                      : <span className="text-xs text-neutral-700 italic font-black uppercase tracking-widest">Blue Bird</span>}
                   </div>
                 ))}
               </section>
             </div>
           )}
 
-          {activeTab === 'gear' && (
-            <div className="bg-black border-2 border-cyan-400 p-10 text-center relative overflow-hidden" style={{boxShadow: '10px 10px 0px #ec4899'}}>
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600"></div>
-              <Gamepad2 className="w-20 h-20 text-pink-500 mx-auto mb-6" style={{filter: 'drop-shadow(0 0 15px rgba(236,72,153,0.8))'}} />
+          {activeTab === "gear" && (
+            <div className="bg-black border-2 border-cyan-400 p-10 text-center relative overflow-hidden" style={shadow("#ec4899")}>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600" />
+              <Gamepad2 className="w-20 h-20 text-pink-500 mx-auto mb-6" />
               <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter">Rad Gear Advisor</h2>
               <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest mb-10">Look good // Shred harder</p>
-
               {isGeneratingGear ? (
-                <div className="py-12"><Loader2 className="w-12 h-12 animate-spin mx-auto text-pink-500" /><p className="mt-6 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Browsing '86 Winter Catalog...</p></div>
+                <div className="py-12">
+                  <Loader2 className="w-12 h-12 animate-spin mx-auto text-pink-500" />
+                  <p className="mt-6 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Browsing '86 Winter Catalog...</p>
+                </div>
               ) : (
-                <div className="bg-neutral-900 border-2 border-pink-500 p-8 text-sm text-pink-100 italic whitespace-pre-wrap leading-relaxed text-left border-dashed relative">
-                  <div className="absolute -top-4 right-6 bg-pink-500 text-black px-3 py-1 text-xs font-black italic tracking-widest" style={{boxShadow: '4px 4px 0px #06b6d4'}}>STYLED FOR STOKE</div>
+                <div className="bg-neutral-900 border-2 border-pink-500 border-dashed p-8 text-sm text-pink-100 italic whitespace-pre-wrap leading-relaxed text-left relative">
+                  <div className="absolute -top-4 right-6 bg-pink-500 text-black px-3 py-1 text-xs font-black italic tracking-widest" style={shadow("#06b6d4")}>STYLED FOR STOKE</div>
                   {gearAdvice || (
                     <div className="text-center py-6">
-                      <button onClick={generateGear} className="bg-pink-500 text-black font-black uppercase px-10 py-5 hover:scale-105 active:translate-y-1 transition-all text-lg italic tracking-tighter" style={{boxShadow: '6px 6px 0px #06b6d4'}}>GET MY LOOK</button>
+                      <button onClick={generateGear} className="bg-pink-500 text-black font-black uppercase px-10 py-5 hover:scale-105 active:translate-y-1 transition-all text-lg italic tracking-tighter" style={shadow("#06b6d4")}>
+                        GET MY LOOK
+                      </button>
                     </div>
                   )}
                 </div>
@@ -406,56 +400,91 @@ const App = () => {
             </div>
           )}
 
-          {activeTab === 'chat' && (
-            <div className="h-550 flex flex-col bg-black border-2 border-pink-500 relative overflow-hidden" style={{height: 550, boxShadow: '12px 12px 0px #06b6d4'}}>
-              <div className="p-4 border-b-2 border-pink-500 flex items-center justify-between bg-neutral-900 z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-cyan-400 flex items-center justify-center border-2 border-pink-500 text-black font-black" style={{boxShadow: '3px 3px 0px #ec4899'}}><Radio className="w-6 h-6" /></div>
-                  <div>
-                    <h3 className="font-black italic uppercase text-pink-500 text-sm tracking-widest leading-none mb-1">Blue Bird Bro</h3>
-                    <span className="text-xs text-cyan-400 font-bold uppercase tracking-widest">Freq: 88.5 FM // Mountain Base Radio</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/80 relative z-0">
-                {chatHistory.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center opacity-10 text-center p-8">
-                    <Radio className="w-24 h-24 mb-6" />
-                    <p className="font-black italic uppercase text-3xl tracking-tighter">Radio Silence...</p>
-                    <p className="text-xs uppercase mt-3 tracking-widest">Send a request to the booth, dude!</p>
+          {activeTab === "spots" && (
+            <div className="space-y-6">
+              <div className="bg-black border-2 border-cyan-400 p-6 text-center relative" style={shadow("#ec4899")}>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600" />
+                <UtensilsCrossed className="w-14 h-14 text-pink-500 mx-auto mb-4" />
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-1">Local Eats & Brews</h2>
+                <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest mb-6">Near {selectedResort}</p>
+                {!localSpots && !isLoadingSpots && (
+                  <button onClick={fetchLocalSpots}
+                    className="bg-pink-500 text-black font-black uppercase px-10 py-4 hover:scale-105 active:translate-y-1 transition-all text-base italic tracking-tighter"
+                    style={shadow("#06b6d4")}>
+                    FIND THE SPOTS
+                  </button>
+                )}
+                {isLoadingSpots && (
+                  <div className="py-8">
+                    <Loader2 className="w-10 h-10 animate-spin mx-auto text-pink-500" />
+                    <p className="mt-4 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Scanning local intel...</p>
                   </div>
                 )}
-                {chatHistory.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-85 p-4 text-xs italic font-bold uppercase border-2 ${m.role === 'user' ? 'bg-cyan-400 text-black border-cyan-400' : 'bg-black text-pink-100 border-pink-500'}`} style={{maxWidth: '85%', boxShadow: '4px 4px 0px currentColor'}}>{m.text}</div>
+              </div>
+
+              {localSpots && !localSpots.error && (
+                <>
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
+                      <UtensilsCrossed className="w-3 h-3" /> Restaurants
+                    </h3>
+                    {localSpots.restaurants?.map((r, i) => (
+                      <div key={i} className="bg-neutral-900 border-2 border-neutral-800 hover:border-pink-500 p-4 transition-all group">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-black uppercase italic text-white group-hover:text-pink-400 transition-colors text-sm">{r.name}</span>
+                          <span className="text-cyan-400 font-black text-xs">{r.priceRange}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 uppercase font-bold mb-2">{r.vibe}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-pink-500 font-black uppercase tracking-widest">Must Order:</span>
+                          <span className="text-xs text-neutral-300 italic">{r.mustOrder}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-black italic uppercase text-cyan-400 tracking-widest px-2 flex items-center gap-2">
+                      <Coffee className="w-3 h-3" /> Coffee Shops
+                    </h3>
+                    {localSpots.coffee?.map((c, i) => (
+                      <div key={i} className="bg-neutral-900 border-2 border-neutral-800 hover:border-cyan-500 p-4 transition-all group">
+                        <div className="mb-1">
+                          <span className="font-black uppercase italic text-white group-hover:text-cyan-400 transition-colors text-sm">{c.name}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 uppercase font-bold mb-2">{c.vibe}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-cyan-400 font-black uppercase tracking-widest">Must Order:</span>
+                          <span className="text-xs text-neutral-300 italic">{c.mustOrder}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+
+                  <div className="text-center pt-2">
+                    <button onClick={fetchLocalSpots}
+                      className="text-xs font-black uppercase text-neutral-600 hover:text-pink-500 flex items-center gap-1 mx-auto transition-colors">
+                      <RefreshCcw className="w-3 h-3" /> Refresh Picks
+                    </button>
                   </div>
-                ))}
-                {isChatting && <div className="flex justify-start"><div className="bg-pink-500 p-2 flex gap-1 animate-pulse"><div className="w-1.5 h-1.5 bg-black"></div><div className="w-1.5 h-1.5 bg-black"></div><div className="w-1.5 h-1.5 bg-black"></div></div></div>}
-              </div>
-              <div className="p-4 border-t-2 border-pink-500 flex gap-2 bg-neutral-900 z-10">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleChat(e)}
-                  placeholder="RADIO REQUEST..."
-                  className="flex-1 bg-black border-2 border-cyan-400 px-4 py-4 text-xs font-black italic text-pink-400 focus:outline-none focus:border-pink-500 placeholder:text-neutral-800"
-                />
-                <button onClick={handleChat} disabled={isChatting || !chatInput.trim()} className="bg-pink-500 text-black p-4 hover:bg-white transition-colors disabled:opacity-30 active:translate-x-1 active:translate-y-1" style={{boxShadow: '4px 4px 0px #06b6d4'}}>
-                  <Send className="w-6 h-6" />
-                </button>
-              </div>
+                </>
+              )}
+
+              {localSpots?.error && (
+                <div className="bg-red-950/40 border-2 border-red-500 p-4 flex items-center gap-3">
+                  <AlertTriangle className="text-red-500 shrink-0" />
+                  <span className="text-xs font-black uppercase text-red-500 tracking-widest">Signal lost. Could not load local spots.</span>
+                </div>
+              )}
             </div>
           )}
         </main>
 
         <footer className="mt-20 text-center opacity-30 text-xs font-black uppercase tracking-widest text-pink-500 pb-12 flex flex-col items-center gap-6">
-          <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent"></div>
+          <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
           <span>Stay Safe // Shred Hard // Stay Gnarly 🤙</span>
         </footer>
       </div>
     </div>
   );
-};
-
-export default App;
+}
