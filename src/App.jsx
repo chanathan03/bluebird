@@ -24,9 +24,9 @@ const INITIAL_RESORT_DATA = {
       condition: "Deep Powder", lifts: "4/4", trails: "24/24"
     },
     forecast: [
-      { day: "Thursday", high: 30, low: 22, snow: '12"' },
-      { day: "Wednesday", high: 28, low: 18, snow: '6"' },
-      { day: "Thursday", high: 32, low: 24, snow: '2"' },
+      { day: "Sunday", high: 30, low: 22, snow: '12"' },
+      { day: "Monday", high: 28, low: 18, snow: '6"' },
+      { day: "Tuesday", high: 32, low: 24, snow: '2"' },
       { day: "Wednesday", high: 34, low: 28, snow: '0"' },
       { day: "Thursday", high: 31, low: 22, snow: '8"' },
     ]
@@ -38,9 +38,9 @@ const INITIAL_RESORT_DATA = {
       condition: "Powder", lifts: "27/33", trails: "221/277"
     },
     forecast: [
-      { day: "Thursday", high: 27, low: 17, snow: '5"' },
-      { day: "Wednesday", high: 22, low: 10, snow: '2"' },
-      { day: "Thursday", high: 43, low: 17, snow: '0"' },
+      { day: "Sunday", high: 27, low: 17, snow: '5"' },
+      { day: "Monday", high: 22, low: 10, snow: '2"' },
+      { day: "Tuesday", high: 43, low: 17, snow: '0"' },
       { day: "Wednesday", high: 47, low: 24, snow: '0"' },
       { day: "Thursday", high: 44, low: 29, snow: '1"' },
     ]
@@ -52,9 +52,9 @@ const INITIAL_RESORT_DATA = {
       condition: "Packed Powder", lifts: "21/25", trails: "145/175"
     },
     forecast: [
-      { day: "Thursday", high: 28, low: 18, snow: '4"' },
-      { day: "Wednesday", high: 25, low: 15, snow: '10"' },
-      { day: "Thursday", high: 22, low: 12, snow: '2"' },
+      { day: "Sunday", high: 28, low: 18, snow: '4"' },
+      { day: "Monday", high: 25, low: 15, snow: '10"' },
+      { day: "Tuesday", high: 22, low: 12, snow: '2"' },
       { day: "Wednesday", high: 30, low: 20, snow: '0"' },
       { day: "Thursday", high: 35, low: 25, snow: '0"' },
     ]
