@@ -321,19 +321,19 @@ export default function App() {
                   <div>
                     <h2 className="text-lg sm:text-4xl font-black italic uppercase text-cyan-400 tracking-tighter mb-2 leading-tight">{selectedResort}</h2>
                     <span className="text-xs text-neutral-500 uppercase font-black tracking-widest">{resort.region}</span>
-                    <button onClick={() => setMetric(m => !m)} className="mt-2 text-xs font-black uppercase tracking-widest border border-neutral-700 px-2 py-1 hover:border-cyan-500 hover:text-cyan-400 transition-colors text-neutral-500">{metric ? "°F / IN" : "°C / CM"}</button>
+                    <button onClick={() => setMetric(m => !m)} className="mt-2 text-xs font-black uppercase tracking-widest border border-neutral-700 px-2 py-1 hover:border-cyan-500 hover:text-cyan-400 transition-colors text-neutral-500">{metric ? "°C / CM" : "°F / IN"}</button>
                   </div>
                   <div className="text-2xl sm:text-6xl font-black italic text-pink-500 tabular-nums shrink-0 ml-2">{metric ? fToC(resort.current.tempF) : resort.current.tempF}°</div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
                     <span className="text-xs font-black text-pink-500 uppercase block mb-1">Fresh Powder</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.newSnowIn) : resort.current.newSnowIn}{metric ? "cm" : '"'}}</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.newSnowIn) : resort.current.newSnowIn}{metric ? "cm" : '"'}</div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">24H SESSION DUMP</span>
                   </div>
                   <div className="bg-neutral-900 border-2 border-pink-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#06b6d4")}>
                     <span className="text-xs font-black text-cyan-400 uppercase block mb-1">Mountain Base</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.baseIn) : resort.current.baseIn}{metric ? "cm" : '"'}}</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.baseIn) : resort.current.baseIn}{metric ? "cm" : '"'}</div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">TOTAL ACCUMULATION</span>
                   </div>
                 </div>
