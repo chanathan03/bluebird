@@ -367,7 +367,7 @@ const App = () => {
                 </h3>
                 {resort.forecast.map((f, i) => (
                   <div key={f.day+i} className={`bg-neutral-900 border-2 p-4 flex justify-between items-center transition-all ${i===0?'border-cyan-400':'border-neutral-900 opacity-60 hover:opacity-100'}`}>
-                    <span className="font-black italic uppercase text-xs w-24 text-white tracking-widest">{f.day}</span>
+                    <div className="flex flex-col w-24"><span className="font-black italic uppercase text-xs text-white tracking-widest">{f.day}</span><span className="text-neutral-500 text-xs font-mono">{new Date(Date.now()+i*86400000).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span></div>
                     <div className="flex gap-4 text-xs font-bold text-neutral-500 uppercase tabular-nums">
                       <span className="text-pink-400">{f.high}° / {f.low}°</span>
                     </div>
