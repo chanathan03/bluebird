@@ -60,13 +60,15 @@ export default function App() {
     setError("");
     try {
       // Get lat/lon via geocoding
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(resortName)}&count=1`);
+      const geoQuery = encodeURIComponent(resortName + " ski resort");
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${geoQuery}&count=5`);
       const geoData = await geoRes.json();
       let lat = null, lon = null, region = "";
-      if (geoData.results && geoData.results[0]) {
-        lat = geoData.results[0].latitude;
-        lon = geoData.results[0].longitude;
-        region = [geoData.results[0].admin1, geoData.results[0].country_code].filter(Boolean).join(", ");
+      if (geoData.results && geoData.results.length > 0) {
+        const best = geoData.results.reduce((a, b) => ((b.elevation || 0) > (a.elevation || 0) ? b : a));
+        lat = best.latitude;
+        lon = best.longitude;
+        region = [best.admin1, best.country_code].filter(Boolean).join(", ");
       }
       // Get real weather forecast from Open-Meteo
       let weatherForecast = null;
