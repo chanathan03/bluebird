@@ -365,9 +365,11 @@ export default function App() {
                       <span className="text-neutral-500 text-xs font-mono">{f.date || new Date(Date.now() + i * 86400000).toLocaleDateString("en-US", {month:"short", day:"numeric"})}</span>
                     </div>
                     <span className="text-pink-400 text-xs font-bold tabular-nums">{f.high}° / {f.low}°</span>
-                    {f.snow && f.snow !== '0"' && f.snow !== "0in"
-                      ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{f.snow} FRESHIES</span>
-                      : <span className="text-xs text-neutral-700 italic font-black uppercase tracking-widest">Blue Bird</span>}
+                    <div className="w-40 text-right">
+                      {f.snow && f.snow !== '0"' && f.snow !== "0in" && f.snow !== "0"
+                        ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{f.snow} FRESHIES</span>
+                        : <span className="text-xs text-neutral-600 italic font-black uppercase tracking-widest">Nada</span>}
+                    </div>
                   </div>
                 ))}
               </section>
