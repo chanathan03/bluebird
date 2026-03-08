@@ -122,7 +122,7 @@ export default function App() {
     try {
       const result = await callClaude(
         `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.`,
-        "You are an enthusiastic 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be totally gnarly and stoked."
+        "You are an 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. If conditions mention rain or wet, sound genuinely bummed out and sad about it. If conditions mention ice or icy, urgently warn the skier — edges matter, wipe-outs are real. Otherwise be totally gnarly and stoked."
       );
       setHypeReport(result);
     } catch {
