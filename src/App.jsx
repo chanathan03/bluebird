@@ -312,10 +312,10 @@ export default function App() {
               <div className="bg-black border-2 border-pink-500 p-6 relative" style={shadow("#7c3aed")}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-4xl font-black italic uppercase text-cyan-400 tracking-tighter truncate max-w-xs mb-2">{selectedResort}</h2>
+                    <h2 className="text-2xl sm:text-4xl font-black italic uppercase text-cyan-400 tracking-tighter mb-2 leading-tight">{selectedResort}</h2>
                     <span className="text-xs text-neutral-500 uppercase font-black tracking-widest">{resort.region}</span>
                   </div>
-                  <div className="text-6xl font-black italic text-pink-500 tabular-nums">{resort.current.tempF}°</div>
+                  <div className="text-4xl sm:text-6xl font-black italic text-pink-500 tabular-nums shrink-0 ml-2">{resort.current.tempF}°</div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
