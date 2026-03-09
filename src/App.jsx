@@ -240,10 +240,19 @@ export default function App() {
     setIsLoadingParking(true);
     setParking(null);
     try {
-      const result = await callClaude(
-        'What is the current parking situation at ' + resortName + ' ski resort today? Check their official website or recent reports. Include lot status (open/full/closed), any reservations required, and tips. Be concise — 2-3 sentences.',
-        'You are a ski resort assistant with access to current information. Give a direct, honest parking update. If you cannot find current info, say so briefly and give general tips for that resort.'
-      );
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: 'You are a ski resort parking assistant. Search for current parking status at the resort. Report lot status, whether reservations are required, current availability if known, and any tips. Be concise — 2-3 sentences. If you find nothing current, say so and give general advice.',
+          messages: [{ role: 'user', content: 'What is the parking situation today at ' + resortName + ' ski resort? Search their official site and recent reports.' }],
+        }),
+      });
+      const data = await response.json();
+      const result = data.content?.map(b => b.text || '').join('') || 'No parking info found.';
       setParking(result);
     } catch {
       setParking('Unable to fetch parking info.');
