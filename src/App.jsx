@@ -5,7 +5,7 @@ fontLink.href = 'https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@1,
 fontLink.rel = 'stylesheet';
 document.head.appendChild(fontLink);
 
-import {
+import { Car,
   Mountain, Search, ChevronRight, Sparkles, Loader2,
   Gamepad2, RefreshCcw, Globe, AlertTriangle, Command,
   Activity, UtensilsCrossed, Coffee
