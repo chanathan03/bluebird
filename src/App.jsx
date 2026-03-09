@@ -689,8 +689,7 @@ export default function App() {
           <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
           <span>Stay Safe // Shred Hard // Stay Gnarly</span>
           <span className="text-neutral-700">© 2026 chan.io</span>
-          <span className="text-neutral-700">© 2026 chan.io</span>
-        </footer>
+                  </footer>
       </div>
     </div>
   );
