@@ -533,45 +533,7 @@ export default function App() {
                 ))}
               </section>
 
-              <section className="space-y-3 pt-2">
-                <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
-                  <Globe className="w-3 h-3" /> Community Intel
-                </h3>
-                {isLoadingReddit && (
-                  <div className="flex items-center gap-3 p-4 bg-neutral-900 border-2 border-neutral-800">
-                    <Loader2 className="w-4 h-4 animate-spin text-pink-500 shrink-0" />
-                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">Scanning subreddit...</span>
-                  </div>
-                )}
-                {redditPosts?.error && (
-                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
-                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No subreddit found for this resort.</span>
-                  </div>
-                )}
-                {redditPosts?.posts?.length === 0 && (
-                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
-                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No recent condition reports found.</span>
-                  </div>
-                )}
-                {redditPosts?.posts?.map((post, i) => (
-                  <a key={i} href={post.url} target="_blank" rel="noopener noreferrer"
-                    className="block bg-neutral-900 border-2 border-neutral-800 hover:border-pink-500 p-4 transition-all group">
-                    <p className="font-black uppercase italic text-white group-hover:text-pink-400 transition-colors text-xs leading-snug mb-2">{post.title}</p>
-                    <div className="flex items-center gap-4 text-xs text-neutral-600 font-mono">
-                      {post.flair && <span className="text-cyan-500 font-black uppercase text-xs">{post.flair}</span>}
-                      <span>↑ {post.score}</span>
-                      <span>{post.comments} comments</span>
-                      <span>{post.age}h ago</span>
-                    </div>
-                  </a>
-                ))}
-                {redditPosts?.subreddit && (
-                  <a href={`https://reddit.com/r/${redditPosts.subreddit}`} target="_blank" rel="noopener noreferrer"
-                    className="block text-xs font-black uppercase text-neutral-700 hover:text-cyan-400 transition-colors text-center py-2">
-                    View r/{redditPosts.subreddit} →
-                  </a>
-                )}
-              </section>
+              
             </div>
           )}
 
