@@ -11,20 +11,27 @@ import { Car,
   Activity, UtensilsCrossed, Coffee
 } from 'lucide-react';
 
-const callClaude = async (userPrompt, systemPrompt) => {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-  });
-  if (!response.ok) throw new Error(`Status ${response.status}`);
-  const data = await response.json();
-  return data.content?.map((b) => b.text || "").join("") || "";
+const callClaude = async (userPrompt, systemPrompt, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+    if (response.status === 429) {
+      await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+      continue;
+    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const data = await response.json();
+    return data.content?.map((b) => b.text || "").join("") || "";
+  }
+  throw new Error("Rate limited after retries");
 };
 
 export default function App() {
@@ -156,11 +163,15 @@ export default function App() {
           }).filter(Boolean).slice(0, 5);
         }
       }
+      const todaySnow = weatherForecast?.[0]?.snow || "unknown";
+      const todayHigh = weatherForecast?.[0]?.high || "unknown";
+      const todayLow = weatherForecast?.[0]?.low || "unknown";
       const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
 {
   "region": "State/Country",
   "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" }
-}`;
+}
+Use these real weather values for today: high ${todayHigh}F, low ${todayLow}F, new snow ${todaySnow}. Estimate current tempF between high and low. Use the real new snow value for newSnowIn. Estimate baseIn based on typical conditions for this resort and season.`;
       const raw = await callClaude(`Snow report for: ${resortName}`, sys);
       const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
       // Always build forecast from real weather data or JS date math — never trust Claude for dates
