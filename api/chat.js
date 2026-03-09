@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { model, max_tokens, system, messages } = req.body;
+  const { model, max_tokens, system, messages, tools } = req.body;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -12,8 +12,9 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "web-search-2025-03-05",
       },
-      body: JSON.stringify({ model, max_tokens, system, messages }),
+      body: JSON.stringify({ model, max_tokens, system, messages, ...(tools && { tools }) }),
     });
 
     const data = await response.json();
