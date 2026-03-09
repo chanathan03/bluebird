@@ -127,10 +127,18 @@ export default function App() {
     if (!resort || isGeneratingHype) return;
     setIsGeneratingHype(true);
     try {
-      const result = await callClaude(
-        `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.`,
-        "You are an 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be honest — if conditions are bad, icy, rainy, or snow totals are low, sound genuinely bummed and suggest alternatives like hitting the lodge bar, grabbing drinks with friends, or trying another sport. If conditions mention ice, warn urgently — edges matter. Only be stoked if conditions actually deserve it."
-      );
+      const hypeRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 200,
+          system: "You are an 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be honest — if conditions are bad, icy, rainy, or snow totals are low, sound genuinely bummed and suggest alternatives like hitting the lodge bar, grabbing drinks with friends, or trying another sport. If conditions mention ice, warn urgently — edges matter. Only be stoked if conditions actually deserve it.",
+          messages: [{ role: "user", content: `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.` }],
+        }),
+      });
+      const hypeData = await hypeRes.json();
+      const result = hypeData.content?.map(b => b.text || "").join("") || "";
       setHypeReport(result);
     } catch {
       setHypeReport("Stoke levels are high, vibes are righteous!");
@@ -206,7 +214,7 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
+          max_tokens: 600,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system: sys,
           messages: [{ role: 'user', content: `Find recent Reddit posts about snow conditions, lifts, or trail reports at ${resortName} ski resort. Search Reddit.` }],
@@ -263,11 +271,11 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
 
   useEffect(() => {
     if (resorts[selectedResort]) {
-      generateHype();
       setGearAdvice("");
       setLocalSpots(null);
-      fetchReddit(selectedResort);
-      fetchParking(selectedResort);
+      generateHype();
+      setTimeout(() => fetchParking(selectedResort), 2000);
+      setTimeout(() => fetchReddit(selectedResort), 4000);
     }
   }, [selectedResort]);
 
