@@ -95,16 +95,20 @@ export default function App() {
           }).filter(Boolean).slice(0, 5);
         }
       }
+      const days = Array.from({length: 5}, (_, i) => {
+        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + i);
+        return d.toLocaleDateString("en-US", { weekday: "long" });
+      });
       const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
 {
   "region": "State/Country",
   "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" },
   "forecast": [
-    {"day":"Sunday","high":number,"low":number,"snow":"Nin"},
-    {"day":"Monday","high":number,"low":number,"snow":"Nin"},
-    {"day":"Tuesday","high":number,"low":number,"snow":"Nin"},
-    {"day":"Wednesday","high":number,"low":number,"snow":"Nin"},
-    {"day":"Thursday","high":number,"low":number,"snow":"Nin"}
+    {"day":"${days[0]}","high":number,"low":number,"snow":"Nin"},
+    {"day":"${days[1]}","high":number,"low":number,"snow":"Nin"},
+    {"day":"${days[2]}","high":number,"low":number,"snow":"Nin"},
+    {"day":"${days[3]}","high":number,"low":number,"snow":"Nin"},
+    {"day":"${days[4]}","high":number,"low":number,"snow":"Nin"}
   ]
 }`;
       const raw = await callClaude(`Snow report for: ${resortName}`, sys);
