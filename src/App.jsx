@@ -221,7 +221,7 @@ export default function App() {
       const key = resortName.toLowerCase();
       const matched = Object.keys(KNOWN_SUBS).find(k => key.includes(k));
       const subreddit = matched ? KNOWN_SUBS[matched] : resortName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-      const res = await fetch('https://www.reddit.com/r/' + subreddit + '/hot.json?limit=25');
+      const res = await fetch('https://www.reddit.com/r/' + subreddit + '/hot.json?limit=25&raw_json=1', { headers: { 'Accept': 'application/json' } });
       if (res.status !== 200) throw new Error('not found');
       const data = await res.json();
       const keywords = ['snow','condition','parking','lift','trail','ice','powder','grooming','crowd','line','wait','open','closed','fresh','report'];
@@ -251,7 +251,6 @@ export default function App() {
       generateHype();
       setGearAdvice("");
       setLocalSpots(null);
-      fetchReddit(selectedResort);
       fetchReddit(selectedResort);
     }
   }, [selectedResort]);
