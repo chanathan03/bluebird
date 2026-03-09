@@ -352,10 +352,9 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
     if (resorts[selectedResort]) {
       setGearAdvice("");
       setLocalSpots(null);
-      generateHype();
-      // Stagger subsequent calls to avoid rate limit
-      setTimeout(() => fetchParking(selectedResort), 2000);
-      setTimeout(() => fetchReddit(selectedResort), 4000);
+      setRedditPosts(null);
+      setTimeout(() => generateHype(), 1500);
+      setTimeout(() => fetchParking(selectedResort), 4000);
     }
   }, [selectedResort]);
 
@@ -585,7 +584,15 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
               <section className="space-y-3 pt-2">
                 <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
                   <Globe className="w-3 h-3" /> Community Intel
+                  {!redditPosts && !isLoadingReddit && (
+                    <button onClick={() => fetchReddit(selectedResort)} className="ml-auto text-xs font-black uppercase text-neutral-600 hover:text-pink-500 transition-colors">LOAD</button>
+                  )}
                 </h3>
+                {!redditPosts && !isLoadingReddit && (
+                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800 text-center">
+                    <button onClick={() => fetchReddit(selectedResort)} className="text-xs font-black uppercase text-neutral-500 hover:text-pink-500 transition-colors tracking-widest">TAP TO SCAN SUBREDDIT →</button>
+                  </div>
+                )}
                 {isLoadingReddit && (
                   <div className="flex items-center gap-3 p-4 bg-neutral-900 border-2 border-neutral-800">
                     <Loader2 className="w-4 h-4 animate-spin text-pink-500 shrink-0" />
