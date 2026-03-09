@@ -489,7 +489,7 @@ export default function App() {
                 <div className="bg-neutral-900/50 border-l-4 border-cyan-500 p-4 mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-black uppercase text-cyan-400 tracking-widest flex items-center gap-1">
-                      <Command className="w-3 h-3" /> Parking Status
+                      <Command className="w-3 h-3" /> Dude, where's my car?
                     </span>
                     <button onClick={() => fetchParking(selectedResort)} disabled={isLoadingParking}
                       className="text-xs uppercase font-black text-cyan-400 flex items-center gap-1 hover:text-white transition-colors">
