@@ -496,7 +496,7 @@ export default function App() {
                       {isLoadingParking ? <Loader2 className="w-2 h-2 animate-spin" /> : <RefreshCcw className="w-2 h-2" />} REFRESH
                     </button>
                   </div>
-                  <div className="text-xs text-pink-100 italic leading-relaxed">
+                  <div className="text-sm text-pink-100 italic leading-relaxed">
                     {isLoadingParking
                       ? <div className="flex items-center gap-2 opacity-50"><Loader2 className="w-3 h-3 animate-spin" /><span>Checking lots...</span></div>
                       : parking || 'Loading parking info...'}
@@ -688,6 +688,8 @@ export default function App() {
         <footer className="mt-20 text-center opacity-30 text-xs font-black uppercase tracking-widest text-pink-500 pb-12 flex flex-col items-center gap-6">
           <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
           <span>Stay Safe // Shred Hard // Stay Gnarly</span>
+          <span className="text-neutral-700">© 2026 chan.io</span>
+          <span className="text-neutral-700">© 2026 chan.io</span>
         </footer>
       </div>
     </div>
