@@ -188,11 +188,39 @@ export default function App() {
     setIsLoadingReddit(true);
     setRedditPosts(null);
     try {
-      const sub = await callClaude(
-        'What is the Reddit subreddit for ski resort ' + resortName + '? Reply with ONLY the subreddit name, no r/ prefix.',
-        'You are a Reddit expert. Reply with only the subreddit name, nothing else.'
-      );
-      const subreddit = sub.trim().replace(/^r\//, '');
+      const KNOWN_SUBS = {
+        'summit at snoqualmie': 'SummitAtSnoqualmie',
+        'snoqualmie': 'SummitAtSnoqualmie',
+        'crystal mountain': 'crystalmountain',
+        'alpental': 'alpental',
+        'stevens pass': 'stevenspass',
+        'vail': 'vail',
+        'vail mountain': 'vail',
+        'breckenridge': 'breckenridge',
+        'keystone': 'keystoneski',
+        'arapahoe basin': 'ArapahoeBasin',
+        'a-basin': 'ArapahoeBasin',
+        'mammoth mountain': 'mammoth',
+        'mammoth': 'mammoth',
+        'tahoe': 'tahoe',
+        'squaw valley': 'squawvalley',
+        'palisades tahoe': 'squawvalley',
+        'heavenly': 'heavenly',
+        'park city': 'parkCity',
+        'alta': 'AltaSkiArea',
+        'snowbird': 'snowbird',
+        'jackson hole': 'jacksonhole',
+        'whistler': 'whistler',
+        'big sky': 'bigskyresort',
+        'sun valley': 'sunvalley',
+        'stowe': 'stowe',
+        'killington': 'killington',
+        'aspen': 'aspen',
+        'telluride': 'telluride',
+      };
+      const key = resortName.toLowerCase();
+      const matched = Object.keys(KNOWN_SUBS).find(k => key.includes(k));
+      const subreddit = matched ? KNOWN_SUBS[matched] : resortName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
       const res = await fetch('https://www.reddit.com/r/' + subreddit + '/hot.json?limit=25');
       if (res.status !== 200) throw new Error('not found');
       const data = await res.json();
