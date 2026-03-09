@@ -371,10 +371,7 @@ export default function App() {
           </div>
         </header>
 
-          <div className="flex gap-4 whitespace-nowrap overflow-hidden">
-            {terminalLogs.map((log, i) => <span key={i} className="opacity-80">[{log}]</span>)}
-          </div>
-        </div>
+
 
         <div className="relative mb-6" ref={searchRef}>
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
