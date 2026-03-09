@@ -190,43 +190,6 @@ export default function App() {
     setIsLoadingReddit(true);
     setRedditPosts(null);
     try {
-      // Ask Claude to guess the subreddit name
-      const sub = await callClaude(
-        `What is the Reddit subreddit name for the ski resort "${resortName}"? Reply with ONLY the subreddit name, no r/, no explanation. If unsure, guess based on the resort name.`,
-        "You are a Reddit expert. Reply with only the subreddit name, nothing else."
-      );
-      const subreddit = sub.trim().replace(/^r\//, "");
-      const res = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=25`);
-      if (!res.ok) throw new Error("subreddit not found");
-      const data = await res.json();
-      const keywords = ["snow", "condition", "parking", "lift", "trail", "ice", "powder", "grooming", "crowd", "line", "wait", "open", "closed", "fresh", "report"];
-      const posts = data.data.children
-        .map(p => p.data)
-        .filter(p => {
-          const text = (p.title + " " + (p.selftext || "")).toLowerCase();
-          return keywords.some(k => text.includes(k));
-        })
-        .slice(0, 5)
-        .map(p => ({
-          title: p.title,
-          score: p.score,
-          comments: p.num_comments,
-          url: `https://reddit.com${p.permalink}`,
-          age: Math.round((Date.now() / 1000 - p.created_utc) / 3600),
-          flair: p.link_flair_text,
-        }));
-      setRedditPosts({ posts, subreddit });
-    } catch {
-      setRedditPosts({ error: true });
-    } finally {
-      setIsLoadingReddit(false);
-    }
-  };
-
-  const fetchReddit = async (resortName) => {
-    setIsLoadingReddit(true);
-    setRedditPosts(null);
-    try {
       const sub = await callClaude(
         'What is the Reddit subreddit for ski resort ' + resortName + '? Reply with ONLY the subreddit name, no r/ prefix.',
         'You are a Reddit expert. Reply with only the subreddit name, nothing else.'
