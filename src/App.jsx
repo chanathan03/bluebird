@@ -687,8 +687,8 @@ export default function App() {
 
         <footer className="mt-20 text-center opacity-30 text-xs font-black uppercase tracking-widest text-pink-500 pb-12 flex flex-col items-center gap-6">
           <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
-          <span>Stay Safe // Shred Hard // Stay Gnarly</span>
-          <span className="text-neutral-500">© 2026 chan.io</span>
+          <span>Pre-ride / Re-ride / Free Ride</span>
+          <span className="text-neutral-400">© 2026 chan.io</span>
                   </footer>
       </div>
     </div>
