@@ -95,25 +95,25 @@ export default function App() {
           }).filter(Boolean).slice(0, 5);
         }
       }
-      const days = Array.from({length: 5}, (_, i) => {
-        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + i);
-        return d.toLocaleDateString("en-US", { weekday: "long" });
-      });
       const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
 {
   "region": "State/Country",
-  "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" },
-  "forecast": [
-    {"day":"${days[0]}","high":number,"low":number,"snow":"Nin"},
-    {"day":"${days[1]}","high":number,"low":number,"snow":"Nin"},
-    {"day":"${days[2]}","high":number,"low":number,"snow":"Nin"},
-    {"day":"${days[3]}","high":number,"low":number,"snow":"Nin"},
-    {"day":"${days[4]}","high":number,"low":number,"snow":"Nin"}
-  ]
+  "current": { "tempF": number, "wind": "string", "newSnowIn": number, "baseIn": number, "condition": "string", "lifts": "X/Y", "trails": "X/Y" }
 }`;
       const raw = await callClaude(`Snow report for: ${resortName}`, sys);
       const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-      if (weatherForecast) parsed.forecast = weatherForecast;
+      if (weatherForecast) {
+        parsed.forecast = weatherForecast;
+      } else {
+        parsed.forecast = Array.from({length: 5}, (_, i) => {
+          const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + i);
+          return {
+            day: d.toLocaleDateString("en-US", { weekday: "long" }),
+            date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            high: null, low: null, snow: "0"
+          };
+        });
+      }
       if (region) parsed.region = region;
       setResorts((prev) => ({ ...prev, [resortName]: parsed }));
       setSelectedResort(resortName);
