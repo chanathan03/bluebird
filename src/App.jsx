@@ -371,10 +371,6 @@ export default function App() {
           </div>
         </header>
 
-        <div className="mb-4 bg-neutral-900 border-2 border-neutral-800 p-2 font-mono text-xs uppercase tracking-tighter text-cyan-500 flex items-center gap-3 overflow-hidden">
-          <div className="bg-cyan-500 text-black px-1 font-black flex items-center gap-1 shrink-0 text-xs">
-            <Command className="w-2 h-2" /> STATUS
-          </div>
           <div className="flex gap-4 whitespace-nowrap overflow-hidden">
             {terminalLogs.map((log, i) => <span key={i} className="opacity-80">[{log}]</span>)}
           </div>
