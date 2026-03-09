@@ -80,7 +80,8 @@ export default function App() {
         const wxData = await wxRes.json();
         if (wxData.daily) {
           weatherForecast = wxData.daily.time.map((date, i) => {
-            const d = new Date(date + "T12:00:00");
+            const [year, month, day] = date.split("-").map(Number);
+            const d = new Date(year, month - 1, day); // local, no timezone shift
             const snowIn = Math.round(wxData.daily.snowfall_sum[i] * 10) / 10;
             return {
               day: d.toLocaleDateString("en-US", { weekday: "long" }),
@@ -190,49 +191,31 @@ export default function App() {
     setIsLoadingReddit(true);
     setRedditPosts(null);
     try {
-      const KNOWN_SUBS = {
-        'summit at snoqualmie': 'SummitAtSnoqualmie',
-        'snoqualmie': 'SummitAtSnoqualmie',
-        'crystal mountain': 'crystalmountain',
-        'alpental': 'alpental',
-        'stevens pass': 'stevenspass',
-        'vail': 'vail',
-        'vail mountain': 'vail',
-        'breckenridge': 'breckenridge',
-        'keystone': 'keystoneski',
-        'arapahoe basin': 'ArapahoeBasin',
-        'a-basin': 'ArapahoeBasin',
-        'mammoth mountain': 'mammoth',
-        'mammoth': 'mammoth',
-        'tahoe': 'tahoe',
-        'squaw valley': 'squawvalley',
-        'palisades tahoe': 'squawvalley',
-        'heavenly': 'heavenly',
-        'park city': 'parkCity',
-        'alta': 'AltaSkiArea',
-        'snowbird': 'snowbird',
-        'jackson hole': 'jacksonhole',
-        'whistler': 'whistler',
-        'big sky': 'bigskyresort',
-        'sun valley': 'sunvalley',
-        'stowe': 'stowe',
-        'killington': 'killington',
-        'aspen': 'aspen',
-        'telluride': 'telluride',
-      };
-      const key = resortName.toLowerCase();
-      const matched = Object.keys(KNOWN_SUBS).find(k => key.includes(k));
-      const subreddit = matched ? KNOWN_SUBS[matched] : resortName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-      const res = await fetch('https://www.reddit.com/r/' + subreddit + '/hot.json?limit=25&raw_json=1', { headers: { 'Accept': 'application/json' } });
-      if (res.status !== 200) throw new Error('not found');
-      const data = await res.json();
-      const keywords = ['snow','condition','parking','lift','trail','ice','powder','grooming','crowd','line','wait','open','closed','fresh','report'];
-      const posts = data.data.children.map(p => p.data)
-        .filter(p => keywords.some(k => (p.title + ' ' + (p.selftext||'')).toLowerCase().includes(k)))
-        .slice(0,5)
-        .map(p => ({ title:p.title, score:p.score, comments:p.num_comments, url:'https://reddit.com'+p.permalink, age:Math.round((Date.now()/1000-p.created_utc)/3600), flair:p.link_flair_text }));
-      setRedditPosts({ posts, subreddit });
-    } catch { setRedditPosts({ error:true }); }
+      const sys = `You are a ski community intel bot. Search Reddit for recent posts about snow conditions, lifts, trails, parking, or crowds at the given ski resort. Return ONLY valid JSON, no markdown, no backticks:
+{
+  "subreddit": "subredditName or null",
+  "posts": [
+    { "title": "string", "score": number, "comments": number, "url": "https://reddit.com/...", "age": number, "flair": "string or null" }
+  ]
+}
+Return up to 5 posts. "age" is hours since posted (approximate). If no relevant posts found, return posts as an empty array.`;
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: sys,
+          messages: [{ role: 'user', content: `Find recent Reddit posts about snow conditions, lifts, or trail reports at ${resortName} ski resort. Search Reddit.` }],
+        }),
+      });
+      const data = await response.json();
+      const raw = data.content?.map(b => b.text || '').join('') || '';
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      setRedditPosts(parsed);
+      addLog(`COMMUNITY INTEL LOADED: ${resortName.toUpperCase()}`);
+    } catch { setRedditPosts({ error: true }); }
     finally { setIsLoadingReddit(false); }
   };
 
