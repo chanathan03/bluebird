@@ -64,15 +64,76 @@ export default function App() {
     setIsSearching(false);
     setError("");
     try {
-      const geoQuery = encodeURIComponent(resortName + " ski resort");
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${geoQuery}&count=5`);
-      const geoData = await geoRes.json();
+      // Hardcoded coords for resorts that geocoding gets wrong
+      const KNOWN_COORDS = {
+        // Pacific Northwest
+        'summit at snoqualmie': { lat: 47.39233, lon: -121.40009, region: 'Washington, US' },
+        'snoqualmie': { lat: 47.39233, lon: -121.40009, region: 'Washington, US' },
+        'stevens pass': { lat: 47.7445, lon: -121.0892, region: 'Washington, US' },
+        'crystal mountain': { lat: 46.9282, lon: -121.4747, region: 'Washington, US' },
+        'alpental': { lat: 47.4243, lon: -121.4254, region: 'Washington, US' },
+        'mt baker': { lat: 48.8600, lon: -121.6710, region: 'Washington, US' },
+        'white pass': { lat: 46.6382, lon: -121.3920, region: 'Washington, US' },
+        'timberline lodge': { lat: 45.3311, lon: -121.7113, region: 'Oregon, US' },
+        'mt hood meadows': { lat: 45.3317, lon: -121.6680, region: 'Oregon, US' },
+        // Colorado
+        'breckenridge': { lat: 39.4800, lon: -106.0667, region: 'Colorado, US' },
+        'vail': { lat: 39.6433, lon: -106.3781, region: 'Colorado, US' },
+        'keystone': { lat: 39.6064, lon: -105.9547, region: 'Colorado, US' },
+        'arapahoe basin': { lat: 39.6425, lon: -105.8719, region: 'Colorado, US' },
+        'a-basin': { lat: 39.6425, lon: -105.8719, region: 'Colorado, US' },
+        'copper mountain': { lat: 39.5022, lon: -106.1500, region: 'Colorado, US' },
+        'winter park': { lat: 39.8869, lon: -105.7625, region: 'Colorado, US' },
+        'steamboat': { lat: 40.4572, lon: -106.8045, region: 'Colorado, US' },
+        'telluride': { lat: 37.9375, lon: -107.8542, region: 'Colorado, US' },
+        'aspen snowmass': { lat: 39.2084, lon: -106.9496, region: 'Colorado, US' },
+        'aspen mountain': { lat: 39.1911, lon: -106.8175, region: 'Colorado, US' },
+        'aspen': { lat: 39.1911, lon: -106.8175, region: 'Colorado, US' },
+        'snowmass': { lat: 39.2084, lon: -106.9496, region: 'Colorado, US' },
+        'crested butte': { lat: 38.8997, lon: -106.9658, region: 'Colorado, US' },
+        'loveland': { lat: 39.6800, lon: -105.8978, region: 'Colorado, US' },
+        'monarch': { lat: 38.5150, lon: -106.3317, region: 'Colorado, US' },
+        'eldora': { lat: 39.9375, lon: -105.5831, region: 'Colorado, US' },
+        // Utah
+        'park city': { lat: 40.6514, lon: -111.5080, region: 'Utah, US' },
+        'alta': { lat: 40.5880, lon: -111.6378, region: 'Utah, US' },
+        'snowbird': { lat: 40.5831, lon: -111.6556, region: 'Utah, US' },
+        'deer valley': { lat: 40.6374, lon: -111.4783, region: 'Utah, US' },
+        'solitude': { lat: 40.6197, lon: -111.5928, region: 'Utah, US' },
+        'brighton': { lat: 40.5983, lon: -111.5831, region: 'Utah, US' },
+        'powder mountain': { lat: 41.3797, lon: -111.7806, region: 'Utah, US' },
+        // California
+        'palisades tahoe': { lat: 39.1969, lon: -120.2358, region: 'California, US' },
+        'mammoth mountain': { lat: 37.6308, lon: -119.0326, region: 'California, US' },
+        'mammoth': { lat: 37.6308, lon: -119.0326, region: 'California, US' },
+        'heavenly': { lat: 38.9353, lon: -119.9400, region: 'California, US' },
+        'kirkwood': { lat: 38.6850, lon: -120.0653, region: 'California, US' },
+        'northstar': { lat: 39.2742, lon: -120.1211, region: 'California, US' },
+        // Other
+        'jackson hole': { lat: 43.5875, lon: -110.8278, region: 'Wyoming, US' },
+        'big sky': { lat: 45.2833, lon: -111.4011, region: 'Montana, US' },
+        'sun valley': { lat: 43.6963, lon: -114.3514, region: 'Idaho, US' },
+        'whistler': { lat: 50.0644, lon: -122.9544, region: 'British Columbia, CA' },
+        'stowe': { lat: 44.5303, lon: -72.7814, region: 'Vermont, US' },
+        'killington': { lat: 43.6045, lon: -72.8201, region: 'Vermont, US' },
+        'sugarloaf': { lat: 45.0314, lon: -70.3131, region: 'Maine, US' },
+      };
+      const key = resortName.toLowerCase();
+      const knownMatch = Object.keys(KNOWN_COORDS).find(k => key.includes(k));
       let lat = null, lon = null, region = "";
-      if (geoData.results && geoData.results.length > 0) {
-        const best = geoData.results.reduce((a, b) => ((b.elevation || 0) > (a.elevation || 0) ? b : a));
-        lat = best.latitude;
-        lon = best.longitude;
-        region = [best.admin1, best.country_code].filter(Boolean).join(", ");
+      if (knownMatch) {
+        ({ lat, lon, region } = KNOWN_COORDS[knownMatch]);
+      } else {
+        const cleanedName = resortName.replace(/^summit at /i, '').replace(/\b(resort|mountain|ski area)\b/gi, '').trim();
+        const geoQuery = encodeURIComponent(cleanedName + " ski");
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${geoQuery}&count=5`);
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const best = geoData.results.reduce((a, b) => ((b.elevation || 0) > (a.elevation || 0) ? b : a));
+          lat = best.latitude;
+          lon = best.longitude;
+          region = [best.admin1, best.country_code].filter(Boolean).join(", ");
+        }
       }
       let weatherForecast = null;
       if (lat) {
@@ -82,7 +143,7 @@ export default function App() {
           const today = new Date(); today.setHours(0,0,0,0);
           weatherForecast = wxData.daily.time.map((date, i) => {
             const [year, month, day] = date.split("-").map(Number);
-            const d = new Date(year, month - 1, day);
+            const d = new Date(year, month - 1, day); // local, no timezone shift
             if (d < today) return null;
             const snowIn = Math.round(wxData.daily.snowfall_sum[i] * 10) / 10;
             return {
@@ -102,6 +163,7 @@ export default function App() {
 }`;
       const raw = await callClaude(`Snow report for: ${resortName}`, sys);
       const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      // Always build forecast from real weather data or JS date math — never trust Claude for dates
       if (weatherForecast) {
         parsed.forecast = weatherForecast;
       } else {
@@ -225,14 +287,15 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
         }),
       });
       const data = await response.json();
+      // Extract only text blocks (skip tool_use/tool_result blocks)
       const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-      const start = textBlocks.indexOf('{');
-      const end = textBlocks.lastIndexOf('}');
-      if (start === -1 || end === -1) throw new Error('No JSON found');
-      const parsed = JSON.parse(textBlocks.slice(start, end + 1));
+      // Pull out JSON from the response
+      const jsonMatch = textBlocks.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response');
+      const parsed = JSON.parse(jsonMatch[0]);
       setRedditPosts(parsed);
       addLog(`COMMUNITY INTEL LOADED: ${resortName.toUpperCase()}`);
-    } catch (e) { console.error('Reddit error:', e); setRedditPosts({ error: true }); }
+    } catch (e) { console.error('Reddit fetch error:', e); setRedditPosts({ error: true }); }
     finally { setIsLoadingReddit(false); }
   };
 
@@ -278,6 +341,7 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
       setGearAdvice("");
       setLocalSpots(null);
       generateHype();
+      // Stagger subsequent calls to avoid rate limit
       setTimeout(() => fetchParking(selectedResort), 2000);
       setTimeout(() => fetchReddit(selectedResort), 4000);
     }
