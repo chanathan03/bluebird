@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
-// Load Work Sans font
 const fontLink = document.createElement('link');
 fontLink.href = 'https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@1,800&display=swap';
 fontLink.rel = 'stylesheet';
 document.head.appendChild(fontLink);
+
 import {
   Mountain, Search, ChevronRight, Sparkles, Loader2,
   Gamepad2, RefreshCcw, Globe, AlertTriangle, Command,
   Activity, UtensilsCrossed, Coffee
 } from 'lucide-react';
-
-
 
 const callClaude = async (userPrompt, systemPrompt) => {
   const response = await fetch("/api/chat", {
@@ -48,6 +46,10 @@ export default function App() {
   const [isGeneratingGear, setIsGeneratingGear] = useState(false);
   const [localSpots, setLocalSpots] = useState(null);
   const [isLoadingSpots, setIsLoadingSpots] = useState(false);
+  const [redditPosts, setRedditPosts] = useState(null);
+  const [isLoadingReddit, setIsLoadingReddit] = useState(false);
+  const [redditPosts, setRedditPosts] = useState(null);
+  const [isLoadingReddit, setIsLoadingReddit] = useState(false);
 
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
@@ -62,20 +64,16 @@ export default function App() {
     setIsSearching(false);
     setError("");
     try {
-      // Get lat/lon via geocoding
-      // Search with "ski resort" appended to prioritize mountain locations over cities
       const geoQuery = encodeURIComponent(resortName + " ski resort");
       const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${geoQuery}&count=5`);
       const geoData = await geoRes.json();
       let lat = null, lon = null, region = "";
       if (geoData.results && geoData.results.length > 0) {
-        // Pick highest elevation result — ski resorts are in mountains
         const best = geoData.results.reduce((a, b) => ((b.elevation || 0) > (a.elevation || 0) ? b : a));
         lat = best.latitude;
         lon = best.longitude;
         region = [best.admin1, best.country_code].filter(Boolean).join(", ");
       }
-      // Get real weather forecast from Open-Meteo
       let weatherForecast = null;
       if (lat) {
         const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto&forecast_days=5`);
@@ -94,7 +92,6 @@ export default function App() {
           });
         }
       }
-      // Get resort details from Claude
       const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
 {
   "region": "State/Country",
@@ -189,6 +186,65 @@ export default function App() {
     }
   };
 
+  const fetchReddit = async (resortName) => {
+    setIsLoadingReddit(true);
+    setRedditPosts(null);
+    try {
+      // Ask Claude to guess the subreddit name
+      const sub = await callClaude(
+        `What is the Reddit subreddit name for the ski resort "${resortName}"? Reply with ONLY the subreddit name, no r/, no explanation. If unsure, guess based on the resort name.`,
+        "You are a Reddit expert. Reply with only the subreddit name, nothing else."
+      );
+      const subreddit = sub.trim().replace(/^r\//, "");
+      const res = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=25`);
+      if (!res.ok) throw new Error("subreddit not found");
+      const data = await res.json();
+      const keywords = ["snow", "condition", "parking", "lift", "trail", "ice", "powder", "grooming", "crowd", "line", "wait", "open", "closed", "fresh", "report"];
+      const posts = data.data.children
+        .map(p => p.data)
+        .filter(p => {
+          const text = (p.title + " " + (p.selftext || "")).toLowerCase();
+          return keywords.some(k => text.includes(k));
+        })
+        .slice(0, 5)
+        .map(p => ({
+          title: p.title,
+          score: p.score,
+          comments: p.num_comments,
+          url: `https://reddit.com${p.permalink}`,
+          age: Math.round((Date.now() / 1000 - p.created_utc) / 3600),
+          flair: p.link_flair_text,
+        }));
+      setRedditPosts({ posts, subreddit });
+    } catch {
+      setRedditPosts({ error: true });
+    } finally {
+      setIsLoadingReddit(false);
+    }
+  };
+
+  const fetchReddit = async (resortName) => {
+    setIsLoadingReddit(true);
+    setRedditPosts(null);
+    try {
+      const sub = await callClaude(
+        'What is the Reddit subreddit for ski resort ' + resortName + '? Reply with ONLY the subreddit name, no r/ prefix.',
+        'You are a Reddit expert. Reply with only the subreddit name, nothing else.'
+      );
+      const subreddit = sub.trim().replace(/^r\//, '');
+      const res = await fetch('https://www.reddit.com/r/' + subreddit + '/hot.json?limit=25');
+      if (res.status !== 200) throw new Error('not found');
+      const data = await res.json();
+      const keywords = ['snow','condition','parking','lift','trail','ice','powder','grooming','crowd','line','wait','open','closed','fresh','report'];
+      const posts = data.data.children.map(p => p.data)
+        .filter(p => keywords.some(k => (p.title + ' ' + (p.selftext||'')).toLowerCase().includes(k)))
+        .slice(0,5)
+        .map(p => ({ title:p.title, score:p.score, comments:p.num_comments, url:'https://reddit.com'+p.permalink, age:Math.round((Date.now()/1000-p.created_utc)/3600), flair:p.link_flair_text }));
+      setRedditPosts({ posts, subreddit });
+    } catch { setRedditPosts({ error:true }); }
+    finally { setIsLoadingReddit(false); }
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setIsSearching(false);
@@ -206,6 +262,8 @@ export default function App() {
       generateHype();
       setGearAdvice("");
       setLocalSpots(null);
+      fetchReddit(selectedResort);
+      fetchReddit(selectedResort);
     }
   }, [selectedResort]);
 
@@ -232,14 +290,60 @@ export default function App() {
         <header className="flex items-center justify-between mb-6">
           <div>
             <div style={{display:"inline-flex", flexDirection:"column", alignItems:"flex-start"}}>
-              <div style={{paddingLeft:"63%", marginBottom:"-8px", lineHeight:1}}>
-                <svg width="40" height="22" viewBox="0 0 40 22" fill="none"><rect x="0" y="18" width="10" height="1" rx="1" fill="#22d3ee"/><rect x="1" y="20" width="7" height="1" rx="1" fill="#a5f3fc"/><rect x="4" y="22" width="4" height="1" rx="1" fill="#67e8f9"/><rect x="11" y="16" width="2" height="2" fill="#ffffff"/><rect x="13" y="16" width="2" height="2" fill="#ffffff"/><rect x="15" y="16" width="2" height="2" fill="#ffffff"/><rect x="17" y="16" width="2" height="2" fill="#ffffff"/><rect x="19" y="16" width="2" height="2" fill="#ffffff"/><rect x="21" y="16" width="2" height="2" fill="#ffffff"/><rect x="23" y="16" width="2" height="2" fill="#ffffff"/><rect x="25" y="16" width="2" height="2" fill="#ffffff"/><rect x="27" y="16" width="2" height="2" fill="#ffffff"/><rect x="29" y="16" width="2" height="2" fill="#ffffff"/><rect x="31" y="16" width="2" height="2" fill="#ffffff"/><rect x="11" y="18" width="2" height="2" fill="#ffffff"/><rect x="13" y="18" width="2" height="2" fill="#ffffff"/><rect x="15" y="18" width="2" height="2" fill="#ffffff"/><rect x="17" y="18" width="2" height="2" fill="#ffffff"/><rect x="19" y="18" width="2" height="2" fill="#ffffff"/><rect x="21" y="18" width="2" height="2" fill="#ffffff"/><rect x="23" y="18" width="2" height="2" fill="#ffffff"/><rect x="25" y="18" width="2" height="2" fill="#ffffff"/><rect x="27" y="18" width="2" height="2" fill="#ffffff"/><rect x="29" y="18" width="2" height="2" fill="#ffffff"/><rect x="31" y="18" width="2" height="2" fill="#ffffff"/><rect x="11" y="20" width="2" height="2" fill="#94a3b8"/><rect x="13" y="20" width="2" height="2" fill="#94a3b8"/><rect x="15" y="20" width="2" height="2" fill="#94a3b8"/><rect x="17" y="20" width="2" height="2" fill="#94a3b8"/><rect x="19" y="20" width="2" height="2" fill="#94a3b8"/><rect x="21" y="20" width="2" height="2" fill="#94a3b8"/><rect x="23" y="20" width="2" height="2" fill="#94a3b8"/><rect x="25" y="20" width="2" height="2" fill="#94a3b8"/><rect x="27" y="20" width="2" height="2" fill="#94a3b8"/><rect x="29" y="20" width="2" height="2" fill="#94a3b8"/><rect x="31" y="20" width="2" height="2" fill="#94a3b8"/><rect x="18" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="20" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="22" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="18" y="2" width="2" height="2" fill="#22d3ee"/><rect x="20" y="2" width="2" height="2" fill="#22d3ee"/><rect x="22" y="2" width="2" height="2" fill="#22d3ee"/><rect x="24" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="16" y="4" width="2" height="2" fill="#22d3ee"/><rect x="18" y="4" width="2" height="2" fill="#22d3ee"/><rect x="20" y="4" width="2" height="2" fill="#22d3ee"/><rect x="22" y="4" width="2" height="2" fill="#22d3ee"/><rect x="24" y="4" width="2" height="2" fill="#22d3ee"/><rect x="26" y="4" width="2" height="2" fill="#0a0a1a"/><rect x="14" y="6" width="2" height="2" fill="#0e7490"/><rect x="16" y="6" width="2" height="2" fill="#22d3ee"/><rect x="18" y="6" width="2" height="2" fill="#22d3ee"/><rect x="20" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="6" width="2" height="2" fill="#22d3ee"/><rect x="26" y="6" width="2" height="2" fill="#fbbf24"/><rect x="28" y="6" width="2" height="2" fill="#fbbf24"/><rect x="12" y="8" width="2" height="2" fill="#0e7490"/><rect x="14" y="8" width="2" height="2" fill="#0e7490"/><rect x="16" y="8" width="2" height="2" fill="#22d3ee"/><rect x="18" y="8" width="2" height="2" fill="#22d3ee"/><rect x="20" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="8" width="2" height="2" fill="#22d3ee"/><rect x="26" y="8" width="2" height="2" fill="#22d3ee"/><rect x="14" y="10" width="2" height="2" fill="#0e7490"/><rect x="16" y="10" width="2" height="2" fill="#0e7490"/><rect x="18" y="10" width="2" height="2" fill="#22d3ee"/><rect x="20" y="10" width="2" height="2" fill="#22d3ee"/><rect x="22" y="10" width="2" height="2" fill="#22d3ee"/><rect x="24" y="10" width="2" height="2" fill="#22d3ee"/><rect x="16" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="12" width="2" height="2" fill="#22d3ee"/><rect x="20" y="12" width="2" height="2" fill="#22d3ee"/><rect x="22" y="12" width="2" height="2" fill="#22d3ee"/><rect x="24" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="14" width="2" height="2" fill="#0e7490"/><rect x="20" y="14" width="2" height="2" fill="#22d3ee"/><rect x="22" y="14" width="2" height="2" fill="#0e7490"/></svg>
+              <div style={{paddingLeft:"63%", marginBottom:"-6px", lineHeight:1}}>
+                <svg width="40" height="23" viewBox="0 0 40 23" fill="none">
+                  <rect x="0" y="18" width="10" height="2" rx="1" fill="#22d3ee"/>
+                  <rect x="2" y="20" width="7" height="1.5" rx="1" fill="#a5f3fc"/>
+                  <rect x="5" y="22" width="4" height="1" rx="1" fill="#67e8f9"/>
+                  <rect x="11" y="16" width="2" height="2" fill="#ffffff"/><rect x="13" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="15" y="16" width="2" height="2" fill="#ffffff"/><rect x="17" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="19" y="16" width="2" height="2" fill="#ffffff"/><rect x="21" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="23" y="16" width="2" height="2" fill="#ffffff"/><rect x="25" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="27" y="16" width="2" height="2" fill="#ffffff"/><rect x="29" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="31" y="16" width="2" height="2" fill="#ffffff"/>
+                  <rect x="11" y="18" width="2" height="2" fill="#ffffff"/><rect x="13" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="15" y="18" width="2" height="2" fill="#ffffff"/><rect x="17" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="19" y="18" width="2" height="2" fill="#ffffff"/><rect x="21" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="23" y="18" width="2" height="2" fill="#ffffff"/><rect x="25" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="27" y="18" width="2" height="2" fill="#ffffff"/><rect x="29" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="31" y="18" width="2" height="2" fill="#ffffff"/>
+                  <rect x="11" y="20" width="2" height="2" fill="#94a3b8"/><rect x="13" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="15" y="20" width="2" height="2" fill="#94a3b8"/><rect x="17" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="19" y="20" width="2" height="2" fill="#94a3b8"/><rect x="21" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="23" y="20" width="2" height="2" fill="#94a3b8"/><rect x="25" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="27" y="20" width="2" height="2" fill="#94a3b8"/><rect x="29" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="31" y="20" width="2" height="2" fill="#94a3b8"/>
+                  <rect x="18" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="20" y="0" width="2" height="2" fill="#a5f3fc"/>
+                  <rect x="22" y="0" width="2" height="2" fill="#a5f3fc"/><rect x="24" y="0" width="2" height="2" fill="#a5f3fc"/>
+                  <rect x="16" y="2" width="2" height="2" fill="#a5f3fc"/><rect x="18" y="2" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="20" y="2" width="2" height="2" fill="#22d3ee"/><rect x="22" y="2" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="24" y="2" width="2" height="2" fill="#a5f3fc"/>
+                  <rect x="16" y="4" width="2" height="2" fill="#22d3ee"/><rect x="18" y="4" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="20" y="4" width="2" height="2" fill="#22d3ee"/><rect x="22" y="4" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="24" y="4" width="2" height="2" fill="#22d3ee"/><rect x="26" y="4" width="2" height="2" fill="#0a0a1a"/>
+                  <rect x="14" y="6" width="2" height="2" fill="#0e7490"/><rect x="16" y="6" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="18" y="6" width="2" height="2" fill="#22d3ee"/><rect x="20" y="6" width="2" height="2" fill="#e0f9ff"/>
+                  <rect x="22" y="6" width="2" height="2" fill="#e0f9ff"/><rect x="24" y="6" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="26" y="6" width="2" height="2" fill="#fbbf24"/><rect x="28" y="6" width="2" height="2" fill="#fbbf24"/>
+                  <rect x="12" y="8" width="2" height="2" fill="#0e7490"/><rect x="14" y="8" width="2" height="2" fill="#0e7490"/>
+                  <rect x="16" y="8" width="2" height="2" fill="#22d3ee"/><rect x="18" y="8" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="20" y="8" width="2" height="2" fill="#e0f9ff"/><rect x="22" y="8" width="2" height="2" fill="#e0f9ff"/>
+                  <rect x="24" y="8" width="2" height="2" fill="#22d3ee"/><rect x="26" y="8" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="14" y="10" width="2" height="2" fill="#0e7490"/><rect x="16" y="10" width="2" height="2" fill="#0e7490"/>
+                  <rect x="18" y="10" width="2" height="2" fill="#22d3ee"/><rect x="20" y="10" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="22" y="10" width="2" height="2" fill="#22d3ee"/><rect x="24" y="10" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="16" y="12" width="2" height="2" fill="#0e7490"/><rect x="18" y="12" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="20" y="12" width="2" height="2" fill="#22d3ee"/><rect x="22" y="12" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="24" y="12" width="2" height="2" fill="#0e7490"/>
+                  <rect x="18" y="14" width="2" height="2" fill="#0e7490"/><rect x="20" y="14" width="2" height="2" fill="#22d3ee"/>
+                  <rect x="22" y="14" width="2" height="2" fill="#0e7490"/>
+                </svg>
               </div>
-              <h1 className="font-black italic tracking-tighter uppercase" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2.5rem,8vw,3.75rem)", lineHeight:1}}>
+              <h1 className="font-black italic tracking-tighter uppercase" style={{fontFamily:"'Work Sans', sans-serif", fontSize:"clamp(2rem,8vw,3.75rem)", lineHeight:1}}>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500">BLUEBIRD</span>
               </h1>
             </div>
-            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic leading-tight">AI Powered Mountain Reports</p>
+            <p className="text-pink-400 text-xs font-black tracking-widest uppercase mt-1 italic">AI Powered Mountain Reports</p>
           </div>
           <div className="flex gap-2">
             {[{ id: "report", I: Mountain }, { id: "gear", I: Gamepad2 }, { id: "spots", I: UtensilsCrossed }].map((t) => (
@@ -311,29 +415,42 @@ export default function App() {
           {activeTab === "report" && !resort && !isGlobalLoading && (
             <div className="text-center py-20">
               <p className="text-2xl font-black italic uppercase tracking-widest text-neutral-700">Search any peak to begin</p>
-              <p className="text-xs font-mono mt-2 text-neutral-800 tracking-widest">↑ TYPE A RESORT ABOVE ↑</p>
+              <p className="text-xs font-mono mt-2 text-neutral-800 tracking-widest">TYPE A RESORT ABOVE</p>
             </div>
           )}
           {activeTab === "report" && resort && (
             <div className="space-y-6">
               <div className="bg-black border-2 border-pink-500 p-6 relative" style={shadow("#7c3aed")}>
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h2 className="text-lg sm:text-4xl font-black italic uppercase text-cyan-400 tracking-tighter mb-2 leading-tight">{selectedResort}</h2>
-                    <span className="text-xs text-neutral-500 uppercase font-black tracking-widest">{resort.region}</span>
-                    <button onClick={() => setMetric(m => !m)} className="mt-2 text-xs font-black uppercase tracking-widest border border-neutral-700 px-2 py-1 hover:border-cyan-500 hover:text-cyan-400 transition-colors text-neutral-500">{metric ? "°C / CM" : "°F / IN"}</button>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1 min-w-0 mr-3">
+                    <h2 className="text-xl sm:text-4xl font-black italic uppercase text-cyan-400 tracking-tighter leading-tight">{selectedResort}</h2>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      <span className="text-xs text-neutral-500 uppercase font-black tracking-widest">{resort.region}</span>
+                      <button onClick={() => setMetric(m => !m)}
+                        className="text-xs font-black uppercase tracking-widest border border-neutral-700 px-2 py-0.5 hover:border-cyan-500 hover:text-cyan-400 transition-colors text-neutral-500 shrink-0">
+                        {metric ? "°F / IN" : "°C / CM"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-2xl sm:text-6xl font-black italic text-pink-500 tabular-nums shrink-0 ml-2">{metric ? fToC(resort.current.tempF) : resort.current.tempF}°</div>
+                  <div className="text-3xl sm:text-6xl font-black italic text-pink-500 tabular-nums shrink-0">
+                    {metric ? fToC(resort.current.tempF) : resort.current.tempF}°
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-neutral-900 border-2 border-cyan-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#ec4899")}>
                     <span className="text-xs font-black text-pink-500 uppercase block mb-1">Fresh Powder</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.newSnowIn) : resort.current.newSnowIn}{metric ? "cm" : '"'}</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">
+                      {metric ? inToCm(resort.current.newSnowIn) : resort.current.newSnowIn}
+                      <span className="text-2xl">{metric ? "cm" : '"'}</span>
+                    </div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">24H SESSION DUMP</span>
                   </div>
                   <div className="bg-neutral-900 border-2 border-pink-500 p-4 hover:bg-neutral-800 transition-colors" style={shadow("#06b6d4")}>
                     <span className="text-xs font-black text-cyan-400 uppercase block mb-1">Mountain Base</span>
-                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">{metric ? inToCm(resort.current.baseIn) : resort.current.baseIn}{metric ? "cm" : '"'}</div>
+                    <div className="text-4xl font-black italic text-white leading-none tabular-nums">
+                      {metric ? inToCm(resort.current.baseIn) : resort.current.baseIn}
+                      <span className="text-2xl">{metric ? "cm" : '"'}</span>
+                    </div>
                     <span className="text-xs text-neutral-600 uppercase font-bold mt-1 block">TOTAL ACCUMULATION</span>
                   </div>
                 </div>
@@ -362,6 +479,48 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              
+              <section className="space-y-3 pt-2">
+                <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
+                  <Globe className="w-3 h-3" /> Community Intel
+                </h3>
+                {isLoadingReddit && (
+                  <div className="flex items-center gap-3 p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <Loader2 className="w-4 h-4 animate-spin text-pink-500 shrink-0" />
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">Scanning subreddit...</span>
+                  </div>
+                )}
+                {redditPosts?.error && (
+                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No subreddit found for this resort.</span>
+                  </div>
+                )}
+                {redditPosts?.posts?.length === 0 && (
+                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No recent condition reports found.</span>
+                  </div>
+                )}
+                {redditPosts?.posts?.map((post, i) => (
+                  <a key={i} href={post.url} target="_blank" rel="noopener noreferrer"
+                    className="block bg-neutral-900 border-2 border-neutral-800 hover:border-pink-500 p-4 transition-all group">
+                    <p className="font-black uppercase italic text-white group-hover:text-pink-400 transition-colors text-xs leading-snug mb-2">{post.title}</p>
+                    <div className="flex items-center gap-4 text-xs text-neutral-600 font-mono">
+                      {post.flair && <span className="text-cyan-500 font-black uppercase text-xs">{post.flair}</span>}
+                      <span>up {post.score}</span>
+                      <span>{post.comments} comments</span>
+                      <span>{post.age}h ago</span>
+                    </div>
+                  </a>
+                ))}
+                {redditPosts?.subreddit && (
+                  <a href={'https://reddit.com/r/' + redditPosts.subreddit} target="_blank" rel="noopener noreferrer"
+                    className="block text-xs font-black uppercase text-neutral-700 hover:text-cyan-400 transition-colors text-center py-2">
+                    View r/{redditPosts.subreddit} →
+                  </a>
+                )}
+              </section>
+
               <section className="space-y-3 pt-2">
                 <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
                   <Activity className="w-3 h-3" /> Long Range Shred Forecast
@@ -370,16 +529,60 @@ export default function App() {
                   <div key={f.day + i} className={`bg-neutral-900 border-2 p-4 flex justify-between items-center transition-all ${i === 0 ? "border-cyan-400" : "border-neutral-900 opacity-60 hover:opacity-100"}`}>
                     <div className="flex flex-col w-24">
                       <span className="font-black italic uppercase text-xs text-white tracking-widest">{f.day}</span>
-                      <span className="text-neutral-500 text-xs font-mono">{f.date || new Date(Date.now() + i * 86400000).toLocaleDateString("en-US", {month:"short", day:"numeric"})}</span>
+                      <span className="text-neutral-500 text-xs font-mono">{f.date || new Date(Date.now() + i * 86400000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                     </div>
-                    <span className="text-pink-400 text-xs font-bold tabular-nums">{metric ? fToC(f.high) : f.high}° / {metric ? fToC(f.low) : f.low}°</span>
-                    <div className="w-40 text-right">
+                    <span className="text-pink-400 text-xs font-bold tabular-nums">
+                      {metric ? fToC(f.high) : f.high}° / {metric ? fToC(f.low) : f.low}°
+                    </span>
+                    <div className="w-36 text-right">
                       {f.snow && f.snow !== '0"' && f.snow !== "0in" && f.snow !== "0"
-                        ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>+{metric ? inToCm(parseFloat(f.snow)) + "cm" : f.snow} FRESHIES</span>
-                        : <span className="text-xs text-neutral-600 italic font-black uppercase tracking-widest">Nada</span>}
+                        ? <span className="bg-cyan-500 text-black px-2 py-1 text-xs font-black italic uppercase" style={shadow("#ec4899")}>
+                            +{metric ? inToCm(parseFloat(f.snow)) + "cm" : f.snow} FRESHIES
+                          </span>
+                        : <span className="text-xs text-neutral-400 italic font-black uppercase tracking-widest">Nada</span>}
                     </div>
                   </div>
                 ))}
+              </section>
+
+              <section className="space-y-3 pt-2">
+                <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
+                  <Globe className="w-3 h-3" /> Community Intel
+                </h3>
+                {isLoadingReddit && (
+                  <div className="flex items-center gap-3 p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <Loader2 className="w-4 h-4 animate-spin text-pink-500 shrink-0" />
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">Scanning subreddit...</span>
+                  </div>
+                )}
+                {redditPosts?.error && (
+                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No subreddit found for this resort.</span>
+                  </div>
+                )}
+                {redditPosts?.posts?.length === 0 && (
+                  <div className="p-4 bg-neutral-900 border-2 border-neutral-800">
+                    <span className="text-xs font-black uppercase text-neutral-600 tracking-widest">No recent condition reports found.</span>
+                  </div>
+                )}
+                {redditPosts?.posts?.map((post, i) => (
+                  <a key={i} href={post.url} target="_blank" rel="noopener noreferrer"
+                    className="block bg-neutral-900 border-2 border-neutral-800 hover:border-pink-500 p-4 transition-all group">
+                    <p className="font-black uppercase italic text-white group-hover:text-pink-400 transition-colors text-xs leading-snug mb-2">{post.title}</p>
+                    <div className="flex items-center gap-4 text-xs text-neutral-600 font-mono">
+                      {post.flair && <span className="text-cyan-500 font-black uppercase text-xs">{post.flair}</span>}
+                      <span>↑ {post.score}</span>
+                      <span>{post.comments} comments</span>
+                      <span>{post.age}h ago</span>
+                    </div>
+                  </a>
+                ))}
+                {redditPosts?.subreddit && (
+                  <a href={`https://reddit.com/r/${redditPosts.subreddit}`} target="_blank" rel="noopener noreferrer"
+                    className="block text-xs font-black uppercase text-neutral-700 hover:text-cyan-400 transition-colors text-center py-2">
+                    View r/{redditPosts.subreddit} →
+                  </a>
+                )}
               </section>
             </div>
           )}
@@ -393,7 +596,7 @@ export default function App() {
               {isGeneratingGear ? (
                 <div className="py-12">
                   <Loader2 className="w-12 h-12 animate-spin mx-auto text-pink-500" />
-                  <p className="mt-6 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Browsing '86 Winter Catalog...</p>
+                  <p className="mt-6 text-xs font-black italic uppercase text-neutral-600 tracking-widest">Browsing 86 Winter Catalog...</p>
                 </div>
               ) : (
                 <div className="bg-neutral-900 border-2 border-pink-500 border-dashed p-8 text-sm text-pink-100 italic whitespace-pre-wrap leading-relaxed text-left relative">
@@ -415,7 +618,7 @@ export default function App() {
               <div className="bg-black border-2 border-cyan-400 p-6 text-center relative" style={shadow("#ec4899")}>
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600" />
                 <UtensilsCrossed className="w-14 h-14 text-pink-500 mx-auto mb-4" />
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-1">Local Eats & Brews</h2>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-1">Local Eats and Brews</h2>
                 <p className="text-xs text-cyan-400 font-bold uppercase tracking-widest mb-6">Near {selectedResort}</p>
                 {!localSpots && !isLoadingSpots && (
                   <button onClick={fetchLocalSpots}
@@ -452,7 +655,6 @@ export default function App() {
                       </div>
                     ))}
                   </section>
-
                   <section className="space-y-3">
                     <h3 className="text-xs font-black italic uppercase text-cyan-400 tracking-widest px-2 flex items-center gap-2">
                       <Coffee className="w-3 h-3" /> Coffee Shops
@@ -470,7 +672,6 @@ export default function App() {
                       </div>
                     ))}
                   </section>
-
                   <div className="text-center pt-2">
                     <button onClick={fetchLocalSpots}
                       className="text-xs font-black uppercase text-neutral-600 hover:text-pink-500 flex items-center gap-1 mx-auto transition-colors">
@@ -492,7 +693,7 @@ export default function App() {
 
         <footer className="mt-20 text-center opacity-30 text-xs font-black uppercase tracking-widest text-pink-500 pb-12 flex flex-col items-center gap-6">
           <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
-          <span>Stay Safe // Shred Hard // Stay Gnarly 🤙</span>
+          <span>Stay Safe // Shred Hard // Stay Gnarly</span>
         </footer>
       </div>
     </div>
