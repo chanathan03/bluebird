@@ -181,8 +181,9 @@ export default function App() {
       setSelectedResort(resortName);
       setSearch("");
       addLog(`TRANSMISSION COMPLETE: ${resortName.toUpperCase()} IS LIVE.`);
-    } catch {
-      setError("SIGNAL LOST: UNABLE TO DECODE MOUNTAIN DATA.");
+    } catch (err) {
+      console.error("FETCH ERROR:", err);
+      setError("SIGNAL LOST: " + err.message);
       addLog("FETCH ERROR: CONNECTION FAILURE.");
     } finally {
       setIsGlobalLoading(false);
