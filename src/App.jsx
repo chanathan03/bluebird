@@ -76,12 +76,14 @@ export default function App() {
       }
       let weatherForecast = null;
       if (lat) {
-        const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto&forecast_days=5`);
+        const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto&forecast_days=6`);
         const wxData = await wxRes.json();
         if (wxData.daily) {
+          const today = new Date(); today.setHours(0,0,0,0);
           weatherForecast = wxData.daily.time.map((date, i) => {
             const [year, month, day] = date.split("-").map(Number);
-            const d = new Date(year, month - 1, day); // local, no timezone shift
+            const d = new Date(year, month - 1, day);
+            if (d < today) return null;
             const snowIn = Math.round(wxData.daily.snowfall_sum[i] * 10) / 10;
             return {
               day: d.toLocaleDateString("en-US", { weekday: "long" }),
@@ -90,7 +92,7 @@ export default function App() {
               low: Math.round(wxData.daily.temperature_2m_min[i]),
               snow: snowIn > 0 ? `${snowIn}"` : "0"
             };
-          });
+          }).filter(Boolean).slice(0, 5);
         }
       }
       const sys = `You are a ski resort data expert. Return ONLY valid JSON, no markdown, no backticks:
@@ -211,11 +213,14 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
         }),
       });
       const data = await response.json();
-      const raw = data.content?.map(b => b.text || '').join('') || '';
-      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      const start = textBlocks.indexOf('{');
+      const end = textBlocks.lastIndexOf('}');
+      if (start === -1 || end === -1) throw new Error('No JSON found');
+      const parsed = JSON.parse(textBlocks.slice(start, end + 1));
       setRedditPosts(parsed);
       addLog(`COMMUNITY INTEL LOADED: ${resortName.toUpperCase()}`);
-    } catch { setRedditPosts({ error: true }); }
+    } catch (e) { console.error('Reddit error:', e); setRedditPosts({ error: true }); }
     finally { setIsLoadingReddit(false); }
   };
 
