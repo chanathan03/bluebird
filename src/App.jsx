@@ -48,8 +48,6 @@ export default function App() {
   const [isLoadingSpots, setIsLoadingSpots] = useState(false);
   const [redditPosts, setRedditPosts] = useState(null);
   const [isLoadingReddit, setIsLoadingReddit] = useState(false);
-  const [redditPosts, setRedditPosts] = useState(null);
-  const [isLoadingReddit, setIsLoadingReddit] = useState(false);
 
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
