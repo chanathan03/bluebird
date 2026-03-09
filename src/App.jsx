@@ -685,7 +685,7 @@ export default function App() {
           <div className="h-px w-48 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
           <span>Pre-ride / Re-ride / Free Ride</span>
           <span className="text-neutral-400">© 2026 chan.io</span>
-                  </footer>
+        </footer>
       </div>
     </div>
   );
