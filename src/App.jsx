@@ -247,8 +247,8 @@ export default function App() {
           model: 'claude-sonnet-4-20250514',
           max_tokens: 300,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          system: 'You are a ski resort parking assistant. Search for current parking status at the resort. Report lot status, whether reservations are required, current availability if known, and any tips. Be concise — 2-3 sentences. If you find nothing current, say so and give general advice.',
-          messages: [{ role: 'user', content: 'What is the parking situation today at ' + resortName + ' ski resort? Search their official site and recent reports.' }],
+          system: 'You are a ski resort parking assistant. Search for current info. Reply in 1-2 punchy sentences only: lot status and one actionable tip. No fluff.',
+          messages: [{ role: 'user', content: 'What is the parking situation today at ' + resortName + '? 1-2 sentences max: lot status, reservations needed, one tip.' }],
         }),
       });
       const data = await response.json();
