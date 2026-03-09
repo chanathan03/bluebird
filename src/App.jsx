@@ -48,6 +48,8 @@ export default function App() {
   const [isLoadingSpots, setIsLoadingSpots] = useState(false);
   const [redditPosts, setRedditPosts] = useState(null);
   const [isLoadingReddit, setIsLoadingReddit] = useState(false);
+  const [parking, setParking] = useState(null);
+  const [isLoadingParking, setIsLoadingParking] = useState(false);
 
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
@@ -234,6 +236,22 @@ export default function App() {
     finally { setIsLoadingReddit(false); }
   };
 
+  const fetchParking = async (resortName) => {
+    setIsLoadingParking(true);
+    setParking(null);
+    try {
+      const result = await callClaude(
+        'What is the current parking situation at ' + resortName + ' ski resort today? Check their official website or recent reports. Include lot status (open/full/closed), any reservations required, and tips. Be concise — 2-3 sentences.',
+        'You are a ski resort assistant with access to current information. Give a direct, honest parking update. If you cannot find current info, say so briefly and give general tips for that resort.'
+      );
+      setParking(result);
+    } catch {
+      setParking('Unable to fetch parking info.');
+    } finally {
+      setIsLoadingParking(false);
+    }
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setIsSearching(false);
@@ -252,6 +270,7 @@ export default function App() {
       setGearAdvice("");
       setLocalSpots(null);
       fetchReddit(selectedResort);
+      fetchParking(selectedResort);
     }
   }, [selectedResort]);
 
@@ -456,6 +475,22 @@ export default function App() {
                     {isGeneratingHype
                       ? <div className="flex items-center gap-2 opacity-50"><Loader2 className="w-3 h-3 animate-spin" /><span>DECRYPTING VIBES...</span></div>
                       : `"${hypeReport || "Awaiting radio transmission..."}"`}
+                  </div>
+                </div>
+                <div className="bg-neutral-900/50 border-l-4 border-cyan-500 p-4 mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-black uppercase text-cyan-400 tracking-widest flex items-center gap-1">
+                      <Command className="w-3 h-3" /> Parking Status
+                    </span>
+                    <button onClick={() => fetchParking(selectedResort)} disabled={isLoadingParking}
+                      className="text-xs uppercase font-black text-cyan-400 flex items-center gap-1 hover:text-white transition-colors">
+                      {isLoadingParking ? <Loader2 className="w-2 h-2 animate-spin" /> : <RefreshCcw className="w-2 h-2" />} REFRESH
+                    </button>
+                  </div>
+                  <div className="text-xs text-pink-100 italic leading-relaxed">
+                    {isLoadingParking
+                      ? <div className="flex items-center gap-2 opacity-50"><Loader2 className="w-3 h-3 animate-spin" /><span>Checking lots...</span></div>
+                      : parking || 'Loading parking info...'}
                   </div>
                 </div>
                 <div className="flex justify-around text-center pt-4 border-t border-neutral-800">
