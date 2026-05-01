@@ -17,7 +17,7 @@ const callClaude = async (userPrompt, systemPrompt, retries = 3) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 500,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
@@ -209,7 +209,7 @@ Use these real weather values for today: high ${todayHigh}F, low ${todayLow}F, n
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 200,
           system: "You are an 80s ski announcer. Use radical 80s ski slang. 2-3 sentences max. Be honest — if conditions are bad, icy, rainy, or snow totals are low, sound genuinely bummed and suggest alternatives like hitting the lodge bar, grabbing drinks with friends, or trying another sport. If conditions mention ice, warn urgently — edges matter. Only be stoked if conditions actually deserve it.",
           messages: [{ role: "user", content: `Hype report for ${selectedResort}: ${resort.current.tempF}F, ${resort.current.newSnowIn}" fresh snow, ${resort.current.condition}.` }],
@@ -291,7 +291,7 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 600,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system: sys,
@@ -319,7 +319,7 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 300,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system: 'You are a ski resort parking assistant. Search for current info. Reply in 1-2 punchy sentences only: lot status and one actionable tip. No fluff.',
