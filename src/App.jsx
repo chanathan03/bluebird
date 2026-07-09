@@ -8,7 +8,7 @@ document.head.appendChild(fontLink);
 import { Car,
   Mountain, Search, ChevronRight, Sparkles, Loader2,
   Gamepad2, RefreshCcw, Globe, AlertTriangle, Command,
-  Activity, UtensilsCrossed, Coffee
+  Activity, UtensilsCrossed, Coffee, Smartphone, Send, CheckCircle2
 } from 'lucide-react';
 
 const callClaude = async (userPrompt, systemPrompt, retries = 3) => {
@@ -57,6 +57,9 @@ export default function App() {
   const [isLoadingReddit, setIsLoadingReddit] = useState(false);
   const [parking, setParking] = useState(null);
   const [isLoadingParking, setIsLoadingParking] = useState(false);
+  const [smsPhone, setSmsPhone] = useState("");
+  const [smsStatus, setSmsStatus] = useState("idle"); // idle | sending | success | error
+  const [smsError, setSmsError] = useState("");
 
   const resort = resorts[selectedResort];
   const addLog = (msg) => setTerminalLogs((prev) => [...prev.slice(-3), `> ${msg.toUpperCase()}`]);
@@ -336,6 +339,27 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
     }
   };
 
+  const sendSmsReport = async () => {
+    if (!resort || smsStatus === "sending") return;
+    setSmsStatus("sending");
+    setSmsError("");
+    try {
+      const summary = `BLUEBIRD REPORT \u2014 ${selectedResort} (${resort.region}): ${resort.current.tempF}F, ${resort.current.newSnowIn}" new snow, ${resort.current.baseIn}" base, ${resort.current.condition}. Lifts ${resort.current.lifts}, Trails ${resort.current.trails}.`;
+      const response = await fetch("/api/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: smsPhone, message: summary }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to send text");
+      setSmsStatus("success");
+      addLog(`SMS SENT TO ${smsPhone}`);
+    } catch (err) {
+      setSmsStatus("error");
+      setSmsError(err.message);
+    }
+  };
+
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setIsSearching(false);
@@ -580,7 +604,43 @@ Return up to 5 posts. "age" is hours since posted (approximate). If no relevant 
                 </div>
               </div>
 
-              
+              <div className="bg-black border-2 border-cyan-500 p-6 relative" style={shadow("#ec4899")}>
+                <h3 className="text-xs font-black italic uppercase text-cyan-400 tracking-widest flex items-center gap-2 mb-3">
+                  <Smartphone className="w-3 h-3" /> Text Me This Report
+                </h3>
+                <p className="text-xs text-neutral-500 uppercase font-bold mb-4">Get this exact snow report as a text, right now.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="tel"
+                    className="flex-1 bg-neutral-900 border-2 border-neutral-800 py-3 px-4 focus:outline-none focus:border-pink-500 text-sm placeholder:text-neutral-700 text-white"
+                    placeholder="(555) 123-4567"
+                    value={smsPhone}
+                    onChange={(e) => { setSmsPhone(e.target.value); if (smsStatus !== "sending") setSmsStatus("idle"); }}
+                    onKeyDown={(e) => e.key === "Enter" && sendSmsReport()}
+                  />
+                  <button
+                    onClick={sendSmsReport}
+                    disabled={!smsPhone || smsStatus === "sending"}
+                    className="bg-pink-500 text-black font-black uppercase px-6 py-3 hover:scale-105 active:translate-y-1 transition-all text-sm italic tracking-tighter disabled:opacity-40 disabled:hover:scale-100 flex items-center justify-center gap-2 shrink-0"
+                    style={shadow("#06b6d4")}
+                  >
+                    {smsStatus === "sending"
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                      : <><Send className="w-4 h-4" /> Text Me</>}
+                  </button>
+                </div>
+                {smsStatus === "success" && (
+                  <div className="mt-3 flex items-center gap-2 text-xs font-black uppercase text-cyan-400 tracking-widest">
+                    <CheckCircle2 className="w-4 h-4" /> Sent! Check your phone.
+                  </div>
+                )}
+                {smsStatus === "error" && (
+                  <div className="mt-3 flex items-center gap-2 text-xs font-black uppercase text-red-500 tracking-widest">
+                    <AlertTriangle className="w-4 h-4" /> {smsError || "Something went wrong."}
+                  </div>
+                )}
+              </div>
+
               <section className="space-y-3 pt-2">
                 <h3 className="text-xs font-black italic uppercase text-pink-500 tracking-widest px-2 flex items-center gap-2">
                   <Globe className="w-3 h-3" /> Community Intel
